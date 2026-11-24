@@ -1,0 +1,19 @@
+{
+  "changed": [
+    "concept-artwork.png",
+    "icons/icon-1024.png",
+    "icons/icon-128.png",
+    "icons/icon-16.png",
+    "icons/icon-24.png",
+    "icons/icon-256.png",
+    "icons/icon-32.png",
+    "icons/icon-48.png",
+    "icons/icon-512.png",
+    "icons/icon-64.png",
+    "readme-banner.png",
+    "symbol.png"
+  ],
+  "operation": "install",
+  "source": "trypane-branding.zip",
+  "revision": "v2.zip"
+}
