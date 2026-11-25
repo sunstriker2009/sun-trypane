@@ -21,3 +21,9 @@ jobs:
           test -f .github/CODEOWNERS
           test -f docs/REPOSITORY-SETUP.md
           echo "SUN repository foundation valid"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test

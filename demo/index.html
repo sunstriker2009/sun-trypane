@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TryPane demo</title>
+    <link rel="stylesheet" href="demo.css">
+    <script type="module" src="../dist/demo/main.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>TryPane demo</h1>
+      <p>Edit the sample and run it to see the captured input and character count.</p>
+      <label for="sample">Sample text</label>
+      <textarea id="sample" rows="5">Tweak. Test. Repeat.</textarea>
+      <label class="option"><input id="fail" type="checkbox"> Simulate failure</label>
+      <div id="try-it"></div>
+    </main>
+  </body>
+</html>
