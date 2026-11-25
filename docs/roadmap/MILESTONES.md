@@ -1,6 +1,6 @@
 # TryPane milestones
 
-**Status** · M0 is next. TryPane by Sun (SUN-P004) is provisioned and branded. Component implementation and runtime acceptance are pending.
+**Status** · The M0 component and fake-runner demo are implemented. M1 brings in the C# Regex adapter. Real-runtime browser acceptance remains in M2.
 
 **Tweak. Test. Repeat.** TryPane is an embeddable **Try It** pane for running a built-in operation or editor-supplied code and inspecting the result alongside the input. The host supplies the input and available runners and owns theme, persistence, and execution permissions. TryPane owns the run controls, status, and result display. A runner adapter owns runtime loading, execution, and cancellation.
 
@@ -10,7 +10,7 @@ Build the TryPane component and runner adapter in this repository, using [CodeFo
 
 | Milestone | Deliverable | Exit criteria | State |
 | --- | --- | --- | --- |
-| M0 · Component foundation | Set up a minimal TypeScript browser component, a small host harness, and a fake adapter. Define the host and adapter contracts for run identity, status, cancellation, and structured results. Keep input host-owned and the pane independent of a particular editor. | The host passes its current input when the user selects Run. A fixture demonstrates loading, running, success, failure, and cancellation. Cancel preserves input, stale results cannot replace a newer run, and the core tests run in CI. | Planned |
+| M0 · Component foundation | Set up a minimal TypeScript browser component, a small host harness, and a fake adapter. Define the host and adapter contracts for run identity, status, cancellation, and structured results. Keep input host-owned and the pane independent of a particular editor. | The host passes its current input when the user selects Run. A fixture demonstrates loading, running, success, failure, and cancellation. Cancel preserves input, stale results cannot replace a newer run, and the core tests run in CI. | Implemented |
 | M1 · C# Regex adapter | Build the TryPane adapter around the existing C# Regex worker and embed it in a small reference-style host. Use a host result renderer for highlights and captures. Pin the .NET WebAssembly assets with the preview host and load them on first use. | Valid input matches CodeFolio’s first-match and all-matches behavior, including match ranges and numbered and named captures. Invalid patterns and timeouts surface actionable errors. Repeated successful runs reuse the worker, and a subdirectory deployment loads the runtime assets. | Planned |
 | M2 · Runtime and browser acceptance | Validate the first adapter on desktop Chromium and iPhone Safari. Exercise worker lifecycle, keyboard controls, and failure recovery. Record mobile performance against the current CodeFolio experience. | Verify cold start, warm rerun, cancellation, timeout, rerun after cancellation, and teardown with input intact. Verify focus, status announcements, bounded output, mobile layout, and error recovery. Record device, browser, deployment, runtime transfer size, and cold and warm timings. | Planned |
 | M3 · CodeFolio integration preview | Package a versioned pane and runtime bundle. Document embedding, host input and theme, worker asset paths, result rendering, errors, and browser support. Trial the pinned build in a CodeFolio Regex preview with host approval. | A host can embed a pinned build from the guide. The preview preserves current Regex behavior and host-owned inputs and saved test cases. Verify the preview can revert to its previous runner. | Planned |
@@ -25,8 +25,8 @@ Build the TryPane component and runner adapter in this repository, using [CodeFo
 
 Once the CodeFolio-based runner has a measured baseline, compare it with Runno and similar tools. Use concrete gaps to guide which ideas to adapt, such as live output, stdin, or multi-file examples. Use a separate milestone for any additional language or editor-supplied script runner. The first release scope is the precompiled C# Regex operation.
 
-## First implementation PR
+## M0 foundation
 
-Create the M0 harness, component shell, and fake adapter in this repository. Demonstrate passing edited input, running, cancelling, and running again with the same input. Keep the first PR independently testable with no runtime downloads. Link implementation PRs, CI runs, and browser evidence here as they become available.
+The [local demo](../../README.md#run-the-demo-locally) shows the host passing edited input to the pane, cancelling, rerunning, and recovering from an error. The [runner tests](../../tests/runner.test.mjs) cover input snapshots, cancellation during loading and execution, late results and errors, retry, and teardown.
 
 Follow the [SUN Git workflow](https://github.com/sunstriker2009/sun-ecosystem/blob/main/docs/governance/GIT-WORKFLOW.md).
