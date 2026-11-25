@@ -79,3 +79,17 @@ pre {
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
+
+input:not([type="checkbox"]), select {
+  box-sizing: border-box;
+  display: block;
+  font: inherit;
+  margin: .25rem 0 .75rem;
+  padding: .5rem;
+  width: 100%;
+}
+
+.highlighted-input {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}

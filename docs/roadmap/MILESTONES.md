@@ -1,6 +1,6 @@
 # TryPane milestones
 
-**Status** · The M0 component and fake-runner demo are implemented. M1 brings in the C# Regex adapter. Real-runtime browser acceptance remains in M2.
+**Status** · The M0 component and fake-runner demo are implemented. M1 is in progress with the C# Regex adapter and preview host. Real-runtime browser acceptance remains in M2.
 
 **Tweak. Test. Repeat.** TryPane is an embeddable **Try It** pane for running a built-in operation or editor-supplied code and inspecting the result alongside the input. The host supplies the input and available runners and owns theme, persistence, and execution permissions. TryPane owns the run controls, status, and result display. A runner adapter owns runtime loading, execution, and cancellation.
 

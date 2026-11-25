@@ -6,6 +6,7 @@ export interface RunContext {
 export interface RunnerAdapter<Input, Result> {
   load(context: RunContext): Promise<void>;
   run(input: Input, context: RunContext): Promise<Result>;
+  dispose?(): void;
 }
 
 export type RunState<Result> =
@@ -72,5 +73,6 @@ export class RunController<Input, Result> {
     const run = this.active;
     this.active = undefined;
     run?.controller.abort();
+    this.adapter.dispose?.();
   }
 }
