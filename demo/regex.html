@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TryPane C# Regex</title>
+    <link rel="stylesheet" href="demo.css">
+    <script type="module" src="../dist/demo/regex-main.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>TryPane C# Regex</h1>
+      <label for="pattern">C# pattern</label>
+      <input id="pattern" value="(?&lt;word&gt;[A-Za-z]+)" spellcheck="false">
+      <label for="text">Test text</label>
+      <textarea id="text" rows="5">Hello, world!</textarea>
+      <label for="mode">Match mode</label>
+      <select id="mode"><option value="first">First match</option><option value="all">Find all</option></select>
+      <div id="try-it"></div>
+    </main>
+  </body>
+</html>

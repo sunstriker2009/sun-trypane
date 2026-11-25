@@ -1,0 +1,1 @@
+The C# Regex operation in Program.cs is adapted from CodeFolio's Regex preview at commit f1f87ebbf4052b728db32069a56cd12e82bd232d. It preserves the pattern, test text, match limit, 250 ms .NET Regex timeout, capture data and JSON response contract. The worker is tailored to TryPane's request IDs and owns the published runtime under wwwroot/_framework.
