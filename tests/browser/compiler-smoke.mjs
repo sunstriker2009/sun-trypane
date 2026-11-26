@@ -1,0 +1,66 @@
+import assert from 'node:assert/strict';
+import { writeFile } from 'node:fs/promises';
+import { performance } from 'node:perf_hooks';
+import { chromium } from 'playwright';
+
+const origin = process.argv[2];
+if (!origin) throw new Error('Pass the local static server URL.');
+const browser = await chromium.launch(process.env.TRYPANE_CHROME_PATH
+  ? { executablePath: process.env.TRYPANE_CHROME_PATH, args: ['--no-sandbox'] }
+  : { args: ['--no-sandbox'] });
+
+try {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  page.setDefaultTimeout(50_000);
+  const submittedSource = 'Console.WriteLine(Enumerable.Range(1, 5).Sum());';
+  const requests = [];
+  const bytes = new Map();
+  page.on('request', request => requests.push({ method: request.method(), url: request.url() }));
+  page.on('response', response => {
+    if (response.url().includes('/dist/compiler/wwwroot/')) {
+      bytes.set(response.url(), Number(response.headers()['content-length'] ?? 0));
+    }
+  });
+  await page.goto(new URL('demo/csharp-check.html', origin).href);
+  const source = page.getByRole('textbox', { name: 'C# source' });
+  const check = page.getByRole('button', { name: 'Check', exact: true });
+  const status = page.getByRole('status');
+  const result = page.locator('.try-pane__result');
+
+  assert.equal(await source.inputValue(), submittedSource);
+  const started = performance.now();
+  await check.click();
+  await status.getByText('Compilation passed.').waitFor();
+  const coldMs = Math.round(performance.now() - started);
+  const runtimeBytes = [...bytes.values()].reduce((sum, size) => sum + size, 0);
+  assert.ok(runtimeBytes > 0);
+
+  await source.fill('// First line\nConsole.WriteLine(MissingValue);');
+  await check.click();
+  await status.getByText('Compilation failed.').waitFor();
+  assert.match(await result.textContent(), /Line 2, column 19 · error CS0103/);
+  assert.match(await result.textContent(), /MissingValue/);
+
+  const blocked = Promise.withResolvers();
+  await page.route('**/compiler-worker.mjs', async route => {
+    await blocked.promise;
+    await route.abort().catch(() => {});
+  });
+  await check.click();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await status.getByText('Cancelled', { exact: true }).waitFor();
+  blocked.resolve();
+  await page.unroute('**/compiler-worker.mjs');
+  assert.match(await source.inputValue(), /MissingValue/);
+  await source.fill('throw new Exception("Compilation does not execute this.");');
+  await check.click();
+  await status.getByText('Compilation passed.').waitFor();
+  assert.ok(requests.every(request => request.method === 'GET' && request.url.startsWith(origin)));
+  assert.ok(requests.every(request => !request.url.includes('MissingValue')));
+
+  const report = { browser: await browser.version(), coldMs, runtimeBytes, runtimeRequests: bytes.size };
+  await writeFile('dist/compiler-measurements.json', JSON.stringify(report, null, 2) + '\n');
+  console.log(JSON.stringify(report));
+} finally {
+  await browser.close();
+}

@@ -3,3 +3,6 @@
 
 /runtime/bin/
 /runtime/obj/
+
+/prototype/browser-csharp/bin/
+/prototype/browser-csharp/obj/
