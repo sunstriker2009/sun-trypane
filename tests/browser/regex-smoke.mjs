@@ -128,6 +128,53 @@ try {
   await cancelPage.getByRole('status').getByText('1 match.').waitFor();
   assert.equal(await cancelInput.inputValue(), 'Keep this input');
 
+  const batchPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const clockStart = new Date('2026-01-01T00:00:00Z');
+  await batchPage.clock.install({ time: clockStart });
+  await batchPage.goto(new URL('batch.html', url).href);
+  await batchPage.clock.pauseAt(new Date(clockStart.getTime() + 60_000));
+  const batchInput = batchPage.getByRole('textbox');
+  const batchRun = batchPage.getByRole('button', { name: 'Run', exact: true });
+  const batchStatus = batchPage.getByRole('status');
+  const output = batchPage.locator('.try-pane__output');
+  const summary = batchPage.getByRole('heading', { name: 'Summary' });
+
+  await batchRun.press('Enter');
+  assert.match(await output.textContent(), /Progress: Processed 2 of 5 lines/);
+  assert.equal(await summary.count(), 0);
+  assert.equal(await batchStatus.textContent(), 'Running…');
+  await batchPage.getByRole('button', { name: 'Cancel', exact: true }).press('Enter');
+  await batchPage.clock.runFor(1000);
+  assert.equal(await batchStatus.textContent(), 'Cancelled');
+  assert.equal(await output.locator('li').count(), 1);
+  assert.equal(await summary.count(), 0);
+  assert.match(await batchInput.inputValue(), /missing name/);
+
+  await batchRun.press('Enter');
+  await batchPage.clock.runFor(1000);
+  assert.deepEqual(await output.locator('li').allTextContents(), [
+    'Progress: Processed 2 of 5 lines.',
+    'Diagnostic: Line 3 needs a JSON object with a nonempty name.',
+    'Progress: Processed 4 of 5 lines.',
+    'Progress: Processed 5 of 5 lines.',
+  ]);
+  assert.equal(await batchStatus.textContent(), 'Run complete');
+  assert.match(await batchPage.locator('.try-pane__result').textContent(), /Accepted: 4. Skipped: 1./);
+
+  await batchInput.fill(Array(75).fill('invalid').join('\n'));
+  await batchRun.press('Enter');
+  await batchPage.clock.runFor(1000);
+  assert.equal(await output.locator('li').count(), 100);
+  assert.equal(await output.getByText('Output truncated.').isVisible(), true);
+  assert.equal(await batchPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+
+  await batchRun.press('Enter');
+  await batchPage.getByRole('button', { name: 'Reset run' }).press('Enter');
+  await batchPage.clock.runFor(1000);
+  assert.equal(await output.isVisible(), false);
+  assert.equal(await summary.count(), 0);
+  assert.equal(await batchStatus.textContent(), 'Ready');
+
   const report = {
     browser: await browser.version(),
     viewport: '390x844 Chromium',

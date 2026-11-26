@@ -20,9 +20,13 @@ python3 -m http.server 8000 --bind 127.0.0.1
 
 Open <http://127.0.0.1:8000/demo/>. Edit the sample, select **Run**, then try cancelling and running again. Use **Simulate failure** to check error recovery. The demo uses a fake runner that echoes the submitted text and counts its characters.
 
+Open <http://127.0.0.1:8000/demo/batch.html> for incremental output from a built-in text batch operation. Try cancelling, resetting or editing the input while it runs.
+
 ## Embed the pane
 
 Import `mountTryPane` from the compiled `dist/src/pane.js` module. Pass a host element and options with `readInput`, a runner adapter, and `renderResult`. `readInput` returns a snapshot when the user selects **Run**. The adapter receives the same run ID and abort signal for both `load` and `run`. Use the cleanup function returned by `mountTryPane` when removing the pane.
+
+For incremental output, set `showOutput: true` and call `context.emit({ kind, text })` with `progress` or `diagnostic`. The pane displays entries in arrival order as plain text, with a limit of 100 entries and 512 UTF-16 code units per entry. Output remains visible after Cancel, and clears on the next Run or Reset. The adapter still returns a final result. Output from a completed, cancelled or disposed run is ignored.
 
 ## C# Regex preview
 

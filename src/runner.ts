@@ -1,6 +1,12 @@
+export interface RunOutput {
+  readonly kind: "progress" | "diagnostic";
+  readonly text: string;
+}
+
 export interface RunContext {
   readonly id: number;
   readonly signal: AbortSignal;
+  emit(output: RunOutput): void;
 }
 
 export interface RunnerAdapter<Input, Result> {
@@ -23,6 +29,7 @@ export class RunController<Input, Result> {
   constructor(
     private readonly adapter: RunnerAdapter<Input, Result>,
     private readonly onState: (state: RunState<Result>) => void,
+    private readonly onOutput?: (output: RunOutput) => void,
   ) {}
 
   async start(readInput: () => Input): Promise<void> {
@@ -31,7 +38,13 @@ export class RunController<Input, Result> {
     const id = ++this.nextId;
     const controller = new AbortController();
     this.active = { id, controller };
-    const context: RunContext = { id, signal: controller.signal };
+    const context: RunContext = {
+      id,
+      signal: controller.signal,
+      emit: output => {
+        if (this.active?.id === id) this.onOutput?.(output);
+      },
+    };
     let outcome: RunState<Result>;
 
     try {

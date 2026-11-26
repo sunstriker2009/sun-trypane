@@ -93,3 +93,17 @@ input:not([type="checkbox"]), select {
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
+
+.try-pane__output {
+  margin-top: .75rem;
+  overflow-wrap: anywhere;
+}
+
+.try-pane__output ol {
+  margin: 0 0 .75rem;
+  padding-inline-start: 1.5rem;
+}
+
+#reset {
+  margin-top: .75rem;
+}

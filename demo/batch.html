@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TryPane batch demo</title>
+    <link rel="stylesheet" href="demo.css">
+    <script type="module" src="../dist/demo/batch.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>Summarize a text batch</h1>
+      <label for="batch">Enter one JSON object with a name per line</label>
+      <textarea id="batch" rows="6" maxlength="10000" spellcheck="false">{"name":"Ada"}
+{"name":"Lee"}
+missing name
+{"name":"Jo"}
+{"name":"Alex"}</textarea>
+      <div id="try-it"></div>
+      <button id="reset" type="button">Reset run</button>
+    </main>
+  </body>
+</html>
