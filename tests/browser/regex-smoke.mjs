@@ -23,7 +23,8 @@ const server = createServer(async (request, response) => {
     response.writeHead(404).end();
     return;
   }
-  const file = resolve(root, pathname.slice(prefix.length));
+  const relativePath = siteRoot && pathname === prefix ? 'index.html' : pathname.slice(prefix.length);
+  const file = resolve(root, relativePath);
   if (!file.startsWith(root + sep)) {
     response.writeHead(403).end();
     return;
