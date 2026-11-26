@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TryPane C# compiler check</title>
+    <link rel="stylesheet" href="demo.css">
+    <script type="module" src="../dist/demo/csharp-check.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>Check C# in the browser</h1>
+      <p>Check compilation and inspect diagnostics. This preview checks code without executing it.</p>
+      <label for="source">C# source</label>
+      <textarea id="source" rows="9" maxlength="8192" spellcheck="false">Console.WriteLine(Enumerable.Range(1, 5).Sum());</textarea>
+      <div id="try-it"></div>
+    </main>
+  </body>
+</html>

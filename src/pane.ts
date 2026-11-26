@@ -12,6 +12,7 @@ export interface TryPaneOptions<Input, Result> {
   renderResult(result: Result, target: HTMLElement): void;
   describeResult?(result: Result): string;
   showOutput?: boolean;
+  runLabel?: string;
 }
 
 export function mountTryPane<Input, Result>(
@@ -27,7 +28,7 @@ export function mountTryPane<Input, Result>(
   controls.className = "try-pane__controls";
   const run = document.createElement("button");
   run.type = "button";
-  run.textContent = "Run";
+  run.textContent = options.runLabel ?? "Run";
   const cancel = document.createElement("button");
   cancel.type = "button";
   cancel.textContent = "Cancel";
