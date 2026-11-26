@@ -67,7 +67,7 @@ mountTryPane(target, {
     if (result.status === 'invalid') return result.message;
     if (result.status === 'no-match') return 'No match.';
     if (result.status === 'timeout') return 'The match timed out. Try shorter text.';
-    if (result.status === 'error') return 'The Regex runner could not complete the test.';
+    if (result.status !== 'match') return 'The Regex runner could not complete the test.';
     const count = result.matches.length;
     return result.truncated ? `Showing the first ${count} matches.`
       : `${count} ${count === 1 ? 'match' : 'matches'}.`;
