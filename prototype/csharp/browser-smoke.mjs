@@ -49,14 +49,20 @@ try {
   await status.getByText('Run complete').waitFor();
   assert.match(await output.textContent(), /Sum: 15/);
 
-  await code.fill('Console.WriteLine(MissingValue);');
+  await code.fill('// C# snippet\nConsole.WriteLine(MissingValue);');
   await run.click();
   await status.getByText('Run failed. See diagnostics.').waitFor();
   assert.match(await output.textContent(), /error CS0103/);
+  const jump = page.getByRole('button', { name: 'Line 2, column 19 · error CS0103', exact: true });
+  assert.equal(await jump.count(), 1);
+  await jump.click();
+  assert.equal(await code.evaluate(field => document.activeElement === field), true);
+  assert.equal(await code.evaluate(field => field.selectionStart), (await code.inputValue()).indexOf('MissingValue'));
 
   const loop = 'Console.WriteLine(Console.ReadLine()); while (true) { Thread.Sleep(50); }';
   await stdin.fill('Still running');
   await code.fill(loop);
+  assert.equal(await jump.count(), 0);
   await run.click();
   await output.getByText('Still running', { exact: false }).waitFor();
   await status.getByText('Running…', { exact: true }).waitFor();
