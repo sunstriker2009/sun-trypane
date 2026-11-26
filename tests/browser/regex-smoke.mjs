@@ -4,6 +4,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { chromium } from 'playwright';
+import { checkCompiler } from './compiler-smoke.mjs';
 
 const siteRoot = process.env.TRYPANE_SITE_ROOT;
 const root = resolve(siteRoot ?? process.cwd());
@@ -64,6 +65,7 @@ try {
     assert.equal(page.url(), url);
     await page.goBack();
     assert.equal(await page.getByRole('link', { name: 'Live batch output' }).getAttribute('href'), 'demo/batch.html');
+    assert.equal(await page.getByRole('link', { name: 'C# compiler preview' }).getAttribute('href'), 'demo/csharp-check.html');
   }
   await page.goto(url);
 
@@ -196,6 +198,7 @@ try {
   };
   await writeFile('dist/m2-browser-measurements.json', JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify(report));
+  if (siteRoot) await checkCompiler(browser, new URL("../", url).href);
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));

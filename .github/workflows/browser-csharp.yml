@@ -1,14 +1,6 @@
 name: Browser C# compiler
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - '.github/workflows/browser-csharp.yml'
-      - 'prototype/browser-csharp/**'
-      - 'demo/csharp-check.*'
-      - 'demo/demo.css'
-      - 'src/**'
-      - 'tests/browser/compiler-smoke.mjs'
 permissions:
   contents: read
 jobs:

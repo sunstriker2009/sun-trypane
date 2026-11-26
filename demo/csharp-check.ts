@@ -7,11 +7,14 @@ type CheckResult = {
   diagnostics: { id: string; severity: string; message: string; line: number | null; column: number | null }[];
 };
 
-const adapter: RunnerAdapter<string, CheckResult> = {
+type TimedCheck = CheckResult & { elapsedMs: number };
+
+const adapter: RunnerAdapter<string, TimedCheck> = {
   async load() {},
   run(source, { signal }) {
     return new Promise((resolve, reject) => {
       signal.throwIfAborted();
+      const started = performance.now();
       const worker = new Worker(
         new URL('../compiler/wwwroot/compiler-worker.mjs', import.meta.url),
         { type: 'module' },
@@ -36,7 +39,7 @@ const adapter: RunnerAdapter<string, CheckResult> = {
           ready = true;
           worker.postMessage(source);
         } else if (data.error) fail(data.error);
-        else finish(() => resolve(data.result));
+        else finish(() => resolve({ ...data.result, elapsedMs: performance.now() - started }));
       };
       worker.onerror = () => fail('The compiler worker could not load.');
     });
@@ -53,6 +56,9 @@ const pane = mountTryPane(target, {
   readInput: () => input.value,
   describeResult: result => result.success ? 'Compilation passed.' : 'Compilation failed.',
   renderResult(result, target) {
+    const timing = document.createElement('p');
+    timing.textContent = `Check time: ${(result.elapsedMs / 1000).toFixed(2)} s`;
+    target.append(timing);
     if (!result.diagnostics.length) return;
     const list = document.createElement('ul');
     for (const diagnostic of result.diagnostics) {
