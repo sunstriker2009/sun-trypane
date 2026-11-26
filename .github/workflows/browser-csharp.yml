@@ -41,6 +41,10 @@ jobs:
           else
             npx playwright install chromium --with-deps
           fi
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            node tests/browser/execution-probe.mjs
+            exit
+          fi
           python3 -m http.server 8077 --bind 127.0.0.1 &
           server=$!
           trap 'kill "$server"' EXIT
@@ -48,11 +52,7 @@ jobs:
             if curl -fsS http://127.0.0.1:8077/demo/csharp-check.html -o /dev/null; then break; fi
             sleep 0.25
           done
-          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
-            node tests/browser/execution-probe.mjs http://127.0.0.1:8077/
-          else
-            node tests/browser/compiler-smoke.mjs http://127.0.0.1:8077/
-          fi
+          node tests/browser/compiler-smoke.mjs http://127.0.0.1:8077/
       - uses: actions/upload-artifact@v4
         if: github.event_name == 'workflow_dispatch'
         with:

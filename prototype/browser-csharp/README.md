@@ -24,4 +24,8 @@ Public execution is a separate milestone. Before loading any emitted assembly, e
 
 The owner reported good perceived performance after trying the hosted compiler preview on a phone. No device timings were provided.
 
-The Browser C# compiler pull request workflow builds an optional execution probe and runs it in Chromium. It compiles one built-in console snippet and tests its preset input, end of file, output, diagnostics stream, and exit code. The exported probe takes no source input. Both the probe assembly code and its worker are excluded from the public preview build.
+The Browser C# compiler pull request workflow builds an optional execution probe and runs it in Chromium. It compiles built-in snippets and tests preset input, end of file, output, diagnostics, and exit code. The exported probe accepts a fixed case name. Both the probe assembly code and its worker are excluded from the public preview build.
+
+The Chromium harness puts the frame and worker on a separate loopback origin. It verifies that the frame cannot read the app DOM and that the worker's response policy blocks requests to the app. It also checks termination by Cancel or deadline, a fresh rerun, and a 4,096-character capture limit per console stream. The deadline starts at invocation and a separate timer covers startup.
+
+These tests establish a browser boundary for the known probes. They do not establish a hard memory limit or prove that arbitrary assemblies can be run safely. Before enabling editable execution, choose a delivery origin capable of serving the worker policy and validate memory behavior and browser compatibility.
