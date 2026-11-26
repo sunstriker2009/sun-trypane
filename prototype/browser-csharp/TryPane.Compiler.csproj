@@ -3,11 +3,20 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PublishTrimmed>false</PublishTrimmed>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
+    <ReferencePackVersion>10.0.0</ReferencePackVersion>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
-    <PackageReference Include="Basic.Reference.Assemblies.Net100" Version="1.8.15" />
+    <PackageDownload Include="Microsoft.NETCore.App.Ref" Version="[$(ReferencePackVersion)]" />
+    <CompilerReference Include="System.Runtime;System.Console;System.Linq;System.Collections" />
   </ItemGroup>
+  <Target Name="EmbedCompilerReferences" BeforeTargets="PrepareForBuild">
+    <ItemGroup>
+      <EmbeddedResource Include="@(CompilerReference->'$(NuGetPackageRoot)microsoft.netcore.app.ref/$(ReferencePackVersion)/ref/net10.0/%(Identity).dll')"
+                        LogicalName="CompilerReference.%(Filename).dll" />
+    </ItemGroup>
+  </Target>
 </Project>

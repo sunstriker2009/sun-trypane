@@ -14,6 +14,8 @@ python3 -m http.server 8000 --bind 127.0.0.1
 
 Open <http://127.0.0.1:8000/demo/csharp-check.html>. Edit the snippet and select **Check**.
 
+The compiler references `System.Runtime`, `System.Console`, `System.Linq`, and `System.Collections` from the pinned .NET 10 targeting pack. The workflow checks that the uncompressed runtime responses total at most 30 MB. The original untrimmed prototype served 40.4 MB on the same Chromium CI test.
+
 The separate Browser C# compiler workflow verifies the prototype in Chromium and records first check time and runtime bytes served. Its artifact contains the compiled demo. Serve the extracted artifact root over HTTP and navigate to `demo/csharp-check.html`. This experiment stays outside the standalone Pages site until its runtime cost and mobile behavior have been assessed.
 
 Public execution is a separate milestone. Before loading any emitted assembly, establish what the execution environment can access and test the limits for memory, time, output, and cleanup. The [local Docker editor](../csharp/README.md) is available for running trusted snippets today.

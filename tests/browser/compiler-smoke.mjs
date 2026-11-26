@@ -38,7 +38,8 @@ try {
   assert.equal(await status.textContent(), 'Compilation passed.', await result.textContent());
   const coldMs = Math.round(performance.now() - started);
   const runtimeBytes = [...bytes.values()].reduce((sum, size) => sum + size, 0);
-  assert.ok(runtimeBytes > 0);
+  assert.ok(runtimeBytes > 0 && runtimeBytes <= 30_000_000,
+    `Expected at most 30 MB of compiler assets, received ${runtimeBytes} bytes`);
 
   await source.fill('// First line\nConsole.WriteLine(MissingValue);');
   await check.click();
@@ -57,9 +58,10 @@ try {
   blocked.resolve();
   await page.unroute('**/compiler-worker.mjs');
   assert.match(await source.inputValue(), /MissingValue/);
-  await source.fill('throw new Exception("Compilation does not execute this.");');
+  await source.fill('#warning Browser test\nthrow new Exception("Compilation does not execute this.");');
   await check.click();
   await status.getByText('Compilation passed.').waitFor();
+  assert.match(await result.textContent(), /warning CS1030.*Browser test/);
   assert.ok(requests.every(request => request.method === 'GET' && request.url.startsWith(origin)));
   assert.ok(requests.every(request => !request.url.includes('MissingValue')));
 
