@@ -34,20 +34,9 @@ function docker(args) {
 
 async function run(source) {
   const name = 'trypane-csharp-' + randomUUID();
-  const created = docker([
-    'create', '--name', name, '--pull=never', '--interactive',
-    '--network=none', '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges',
-    '--user=65532:65532', '--pids-limit=96', '--memory=768m', '--memory-swap=768m',
-    '--cpus=1', '--ulimit=core=0', '--log-driver=none',
-    '--tmpfs=/work:rw,nosuid,nodev,noexec,size=64m,mode=1777',
-    '--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=32m,mode=1777',
-    image,
-  ]);
   let stopped;
   let stopMessage;
-  const child = created.status === 0
-    ? spawn('docker', ['start', '--attach', '--interactive', name])
-    : undefined;
+  let child;
 
   const stop = (code, message) => {
     if (stopped !== undefined) return;
@@ -59,6 +48,18 @@ async function run(source) {
   const terminate = () => stop(143, 'Terminated.');
   process.on('SIGINT', interrupt);
   process.on('SIGTERM', terminate);
+  const created = docker([
+    'create', '--name', name, '--pull=never', '--interactive',
+    '--network=none', '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges',
+    '--user=65532:65532', '--pids-limit=96', '--memory=768m', '--memory-swap=768m',
+    '--cpus=1', '--ulimit=core=0', '--log-driver=none',
+    '--tmpfs=/work:rw,nosuid,nodev,noexec,size=64m,mode=1777',
+    '--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=32m,mode=1777',
+    image,
+  ]);
+  child = created.status === 0
+    ? spawn('docker', ['start', '--attach', '--interactive', name])
+    : undefined;
   const timer = setTimeout(() => stop(124, 'Run timed out.'), runTimeoutMs);
 
   try {
