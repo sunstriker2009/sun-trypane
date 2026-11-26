@@ -1,6 +1,6 @@
 # TryPane milestones
 
-**Status** · M0 and M1 are implemented. M2 adds repeatable Chromium acceptance and runtime measurements. iPhone Safari acceptance remains open.
+**Status** · M0 and M1 are implemented. M2 has repeatable Chromium acceptance and runtime measurements. iPhone Safari acceptance remains open. M3 packaging and host preview are in progress.
 
 **Tweak. Test. Repeat.** TryPane is an embeddable **Try It** pane for running a built-in operation or editor-supplied code and inspecting the result alongside the input. The host supplies the input and available runners and owns theme, persistence, and execution permissions. TryPane owns the run controls, status, and result display. A runner adapter owns runtime loading, execution, and cancellation.
 

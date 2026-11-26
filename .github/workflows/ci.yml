@@ -32,6 +32,8 @@ jobs:
           dotnet-version: '10.0.x'
       - run: dotnet workload install wasm-tools --skip-manifest-update
       - run: bash tools-build-runtime.sh
+      - name: Build versioned preview bundle
+        run: bash tools-package-preview.sh "${{ github.event.pull_request.head.sha || github.sha }}"
       - name: Check Regex in Chromium
         shell: bash
         run: |
