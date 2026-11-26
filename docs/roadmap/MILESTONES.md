@@ -1,6 +1,6 @@
 # TryPane milestones
 
-**Status** · M0 and M1 are implemented. M2 has repeatable Chromium acceptance and runtime measurements. iPhone Safari acceptance remains open. M3 packaging and host preview are in progress.
+**Status** · M0 through M3 are complete. The owner accepted the manual CodeFolio preview and waived formal iPhone Safari acceptance. M4 prepares the first versioned release.
 
 **Tweak. Test. Repeat.** TryPane is an embeddable **Try It** pane for running a built-in operation or editor-supplied code and inspecting the result alongside the input. The host supplies the input and available runners and owns theme, persistence, and execution permissions. TryPane owns the run controls, status, and result display. A runner adapter owns runtime loading, execution, and cancellation.
 
@@ -12,21 +12,25 @@ Build the TryPane component and runner adapter in this repository, using [CodeFo
 | --- | --- | --- | --- |
 | M0 · Component foundation | Set up a minimal TypeScript browser component, a small host harness, and a fake adapter. Define the host and adapter contracts for run identity, status, cancellation, and structured results. Keep input host-owned and the pane independent of a particular editor. | The host passes its current input when the user selects Run. A fixture demonstrates loading, running, success, failure, and cancellation. Cancel preserves input, stale results cannot replace a newer run, and the core tests run in CI. | Implemented |
 | M1 · C# Regex adapter | Build the TryPane adapter around the existing C# Regex worker and embed it in a small reference-style host. Use a host result renderer for highlights and captures. Pin the .NET WebAssembly assets with the preview host and load them on first use. | Valid input matches CodeFolio’s first-match and all-matches behavior, including match ranges and numbered and named captures. Invalid patterns and timeouts surface actionable errors. Repeated successful runs reuse the worker, and a subdirectory deployment loads the runtime assets. | Implemented in PR #8 |
-| M2 · Runtime and browser acceptance | Validate the first adapter on desktop Chromium and iPhone Safari. Exercise worker lifecycle, keyboard controls, and failure recovery. Record mobile performance against the current CodeFolio experience. | Verify cold start, warm rerun, cancellation, timeout, rerun after cancellation, and teardown with input intact. Verify focus, status announcements, bounded output, mobile layout, and error recovery. Record device, browser, deployment, runtime transfer size, and cold and warm timings. | In progress — Chromium checks added, iPhone Safari pending |
-| M3 · CodeFolio integration preview | Package a versioned pane and runtime bundle. Document embedding, host input and theme, worker asset paths, result rendering, errors, and browser support. Trial the pinned build in a CodeFolio Regex preview with host approval. | A host can embed a pinned build from the guide. The preview preserves current Regex behavior and host-owned inputs and saved test cases. Verify the preview can revert to its previous runner. | Planned |
-| M4 · First release | Release the embeddable pane and C# Regex adapter under the SUN workflow. | The owner accepts the preview evidence, mobile performance thresholds, supported browsers, runtime limits, integration guide, and release method. Record the changelog, known limitations, and rollback procedure. | Planned |
+| M2 · Runtime and browser acceptance | Validate the first adapter in Chromium at a mobile viewport. Exercise worker lifecycle, keyboard controls, and failure recovery. | Verify cold start, warm rerun, cancellation, timeout, rerun after cancellation, and teardown with input intact. Verify focus, status announcements, bounded output, mobile layout, and error recovery. Record the browser, deployment path, runtime transfer size, and cold and warm timings for the CI run. | Accepted with iPhone Safari waived |
+| M3 · CodeFolio integration preview | Package a versioned pane and runtime bundle. Document embedding, host input and theme, worker asset paths, result rendering, errors, and browser support. Trial the pinned build in a CodeFolio Regex preview with host approval. | A host can embed a pinned build from the guide. The preview preserves current Regex behavior and host-owned inputs and saved test cases. Verify the preview can revert to its previous runner. | Deployed and accepted |
+| M4 · First release | Release the embeddable pane and C# Regex adapter under the SUN workflow. | Record the validation evidence, supported browsers, runtime limits, changelog, known limitations, and rollback procedure. Publish the verified bundle from an annotated tag on main. | Release prepared |
 
 ## M1 verification
 
-[TryPane PR #8](https://github.com/sunstriker2009/sun-trypane/pull/8) builds the .NET 10 WebAssembly bundle and uploads a preview artifact from CI. Its published output was served under `/nested/trypane/` and exercised in Chromium at 390 px. First match, find all, named captures, invalid patterns, no match, the 100-match display limit, a timed-out match and recovery, and runtime asset loading passed. Nine component and adapter tests passed. The C# operation was copied from CodeFolio at the pinned source commit recorded in `runtime/README.md`. iPhone Safari and mobile timing measurements remain M2 acceptance.
+[TryPane PR #8](https://github.com/sunstriker2009/sun-trypane/pull/8) builds the .NET 10 WebAssembly bundle and uploads a preview artifact from CI. Its published output was served under `/nested/trypane/` and exercised in Chromium at 390 px. First match, find all, named captures, invalid patterns, no match, the 100-match display limit, a timed-out match and recovery, and runtime asset loading passed. Nine component and adapter tests passed. The C# operation was copied from CodeFolio at the pinned source commit recorded in `runtime/README.md`. See M2 for the later browser evidence and acceptance decision.
 
 ## M2 acceptance
 
-The [M2 validation guide](../operations/M2-VALIDATION.md) tracks browser measurements, worker lifecycle checks, and the remaining iPhone Safari and CodeFolio comparison. The CI artifact includes `dist/m2-browser-measurements.json` after the browser check passes. Device evidence and mobile limits remain pending.
+The [M2 validation guide](../operations/M2-VALIDATION.md) records Chromium timing and worker lifecycle checks. The owner reported that the manual CodeFolio run looked good and waived formal iPhone Safari acceptance. CI stores `dist/m2-browser-measurements.json` alongside the bundle.
+
+## M3 integration
+
+[TryPane #10](https://github.com/sunstriker2009/sun-trypane/pull/10) added the preview bundle. [CodeFolio #78](https://github.com/sunstriker2009/sun-codefolio/pull/78) embedded it behind `?trypane=1`, and [CodeFolio #79](https://github.com/sunstriker2009/sun-codefolio/pull/79) corrected the source pin and passed the Chromium integration suite. Removing the query parameter restores CodeFolio’s usual runner.
 
 ## Validation
 
-- Verify the deployed subdirectory uses pinned, worker-relative assets. Measure transfer size and click-to-result latency for cold and warm runs. Record cache and network conditions, and agree on mobile thresholds before the integration preview. Record iPhone Safari as pending until it has been checked on a device.
+- Verify the deployed subdirectory uses pinned, worker-relative assets. Measure transfer size and click-to-result latency for cold and warm runs. Record cache, network, and device conditions when reporting performance measurements.
 - End the active worker on cancel or timeout and recreate it on the next run. Check that cancelled or disposed workers cannot publish results, and that closing or unmounting the pane cleans up active work.
 
 ## Follow-up exploration
