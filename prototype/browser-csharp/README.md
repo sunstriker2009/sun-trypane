@@ -19,3 +19,9 @@ The compiler references `System.Runtime`, `System.Console`, `System.Linq`, and `
 Main CI checks the preview in Chromium from the same staged files that GitHub Pages serves. The page shows elapsed time for each check, including worker startup. To compare phone timings, record the browser and connection, then check once with a fresh cache and once again in the same tab. The manual Browser C# compiler workflow also produces a ZIP for offline hosting. Serve the extracted artifact root over HTTP and open `demo/csharp-check.html`.
 
 Public execution is a separate milestone. Before loading any emitted assembly, establish what the execution environment can access and test the limits for memory, time, output, and cleanup. The [local Docker editor](../csharp/README.md) is available for running trusted snippets today.
+
+## Fixed execution probe
+
+The owner reported good perceived performance after trying the hosted compiler preview on a phone. No device timings were provided.
+
+The Browser C# compiler pull request workflow builds an optional execution probe and runs it in Chromium. It compiles one built-in console snippet and tests its preset input, end of file, output, diagnostics stream, and exit code. The exported probe takes no source input. Both the probe assembly code and its worker are excluded from the public preview build.

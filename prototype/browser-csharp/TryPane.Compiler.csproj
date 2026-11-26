@@ -13,6 +13,13 @@
     <PackageDownload Include="Microsoft.NETCore.App.Ref" Version="[$(ReferencePackVersion)]" />
     <CompilerReference Include="System.Runtime.dll;System.Console.dll;System.Linq.dll;System.Collections.dll" />
   </ItemGroup>
+  <ItemGroup Condition="'$(EnableExecutionProbe)' != 'true'">
+    <Compile Remove="ExecutionProbe.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(EnableExecutionProbe)' == 'true'">
+    <!-- The fixed probe invokes these APIs from a dynamically emitted assembly. -->
+    <TrimmerRootAssembly Include="System.Console;System.Linq" />
+  </ItemGroup>
   <Target Name="EmbedCompilerReferences" BeforeTargets="PrepareForBuild">
     <ItemGroup>
       <EmbeddedResource Include="@(CompilerReference->'$(NuGetPackageRoot)microsoft.netcore.app.ref/$(ReferencePackVersion)/ref/net10.0/%(Identity)')"
