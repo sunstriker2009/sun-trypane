@@ -15,6 +15,14 @@ public static partial class SnippetCompiler
 {
     private const int DiagnosticLimit = 50;
 
+    private static readonly MetadataReference[] References =
+    [
+        Net100.References.SystemRuntime,
+        Net100.References.SystemConsole,
+        Net100.References.SystemLinq,
+        Net100.References.SystemCollections,
+    ];
+
     public static void Main() { }
 
     [JSExport]
@@ -26,7 +34,7 @@ public static partial class SnippetCompiler
         var usings = CSharpSyntaxTree.ParseText("global using System; global using System.Linq; global using System.Collections.Generic;");
         var snippet = CSharpSyntaxTree.ParseText(source, path: "Snippet.cs");
         var compilation = CSharpCompilation.Create(
-            "Snippet", [usings, snippet], Net100.References.All,
+            "Snippet", [usings, snippet], References,
             new CSharpCompilationOptions(OutputKind.ConsoleApplication, concurrentBuild: false));
 
         using var output = new MemoryStream();

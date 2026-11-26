@@ -12,6 +12,10 @@ const browser = await chromium.launch(process.env.TRYPANE_CHROME_PATH
 try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   page.setDefaultTimeout(50_000);
+  page.on('pageerror', error => console.error(error));
+  page.on('console', message => {
+    if (message.type() === 'error') console.error('Browser:', message.text());
+  });
   const submittedSource = 'Console.WriteLine(Enumerable.Range(1, 5).Sum());';
   const requests = [];
   const bytes = new Map();
@@ -30,7 +34,8 @@ try {
   assert.equal(await source.inputValue(), submittedSource);
   const started = performance.now();
   await check.click();
-  await status.getByText('Compilation passed.').waitFor();
+  await status.getByText(/Compilation (passed|failed)\.|Run failed/).waitFor();
+  assert.equal(await status.textContent(), 'Compilation passed.', await result.textContent());
   const coldMs = Math.round(performance.now() - started);
   const runtimeBytes = [...bytes.values()].reduce((sum, size) => sum + size, 0);
   assert.ok(runtimeBytes > 0);
