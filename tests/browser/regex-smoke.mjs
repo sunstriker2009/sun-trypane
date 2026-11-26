@@ -1,0 +1,146 @@
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { readFile, writeFile } from 'node:fs/promises';
+import { extname, resolve, sep } from 'node:path';
+import { performance } from 'node:perf_hooks';
+import { chromium } from 'playwright';
+
+const root = process.cwd();
+const prefix = '/nested/trypane/';
+const mime = {
+  '.css': 'text/css',
+  '.dat': 'application/octet-stream',
+  '.html': 'text/html',
+  '.js': 'text/javascript',
+  '.json': 'application/json',
+  '.mjs': 'text/javascript',
+  '.wasm': 'application/wasm',
+};
+const server = createServer(async (request, response) => {
+  const pathname = new URL(request.url, 'http://localhost').pathname;
+  if (!pathname.startsWith(prefix)) {
+    response.writeHead(404).end();
+    return;
+  }
+  const file = resolve(root, pathname.slice(prefix.length));
+  if (!file.startsWith(root + sep)) {
+    response.writeHead(403).end();
+    return;
+  }
+  try {
+    const body = await readFile(file);
+    response.writeHead(200, {
+      'Content-Type': mime[extname(file)] ?? 'application/octet-stream',
+      'Content-Length': body.length,
+    }).end(body);
+  } catch {
+    response.writeHead(404).end();
+  }
+});
+await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+
+const browser = await chromium.launch(process.env.TRYPANE_CHROME_PATH
+  ? { executablePath: process.env.TRYPANE_CHROME_PATH, args: ['--no-sandbox'] }
+  : { args: ['--no-sandbox'] });
+
+try {
+  const address = server.address();
+  const url = `http://127.0.0.1:${address.port}${prefix}demo/regex.html`;
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  page.setDefaultTimeout(45000);
+  const errors = [];
+  const assets = new Map();
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('response', response => {
+    if (response.url().includes('/dist/runtime/wwwroot/')) {
+      assets.set(response.url(), Number(response.headers()['content-length'] ?? 0));
+    }
+  });
+  await page.goto(url);
+
+  const status = page.getByRole('status');
+  const run = page.getByRole('button', { name: 'Run', exact: true });
+  const cancel = page.getByRole('button', { name: 'Cancel', exact: true });
+  const input = page.getByRole('textbox', { name: 'Test text' });
+  const pattern = page.getByRole('textbox', { name: 'C# pattern' });
+  const mode = page.getByRole('combobox', { name: 'Match mode' });
+  const result = page.locator('.try-pane__result');
+
+  // A real runtime load is required for the first successful result.
+  const coldStart = performance.now();
+  await run.focus();
+  await page.keyboard.press('Enter');
+  await status.getByText('1 match.').waitFor();
+  const coldMs = Math.round(performance.now() - coldStart);
+  assert.equal(await run.evaluate(element => document.activeElement === element), true);
+  assert.match(await result.textContent(), /Name word · "Hello"/);
+  const runtimeBytes = [...assets.values()].reduce((sum, bytes) => sum + bytes, 0);
+  assert.ok(runtimeBytes > 0, 'the browser loaded the runtime from the nested path');
+  const assetCount = assets.size;
+
+  const warmStart = performance.now();
+  await run.click();
+  await status.getByText('1 match.').waitFor();
+  const warmMs = Math.round(performance.now() - warmStart);
+  assert.equal(assets.size, assetCount, 'the warm run reused the runtime');
+
+  await mode.selectOption('all');
+  await run.click();
+  await status.getByText('2 matches.').waitFor();
+  await page.getByRole('combobox', { name: 'Inspect match' }).selectOption('1');
+  assert.match(await result.textContent(), /Name word · "world"/);
+
+  await pattern.fill('a');
+  await input.fill('a'.repeat(125));
+  await run.click();
+  await status.getByText('Showing the first 100 matches.').waitFor();
+  assert.equal(await result.locator('mark').count(), 100);
+
+  await pattern.fill('(a+)+$');
+  await input.fill('a'.repeat(7000) + 'X');
+  await run.click();
+  await status.getByText('The match timed out. Try shorter text.').waitFor();
+
+  await pattern.fill('\\d+');
+  await input.fill('42');
+  await run.click();
+  await status.getByText('1 match.').waitFor();
+  assert.equal(await input.inputValue(), '42');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.deepEqual(errors, []);
+
+  // Cancellation during a pending load must keep host input and permit a fresh worker.
+  const cancelPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await cancelPage.route('**/_framework/dotnet.js', async route => {
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    await route.continue().catch(() => {});
+  });
+  await cancelPage.goto(url);
+  const cancelInput = cancelPage.getByRole('textbox', { name: 'Test text' });
+  await cancelInput.fill('Keep this input');
+  await cancelPage.getByRole('button', { name: 'Run', exact: true }).click();
+  await cancelPage.getByRole('status').getByText('Loading runner…').waitFor();
+  await cancelPage.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await cancelPage.getByRole('status').getByText('Cancelled').waitFor();
+  assert.equal(await cancelInput.inputValue(), 'Keep this input');
+  await cancelPage.unroute('**/_framework/dotnet.js');
+  await cancelPage.getByRole('button', { name: 'Run', exact: true }).click();
+  await cancelPage.getByRole('status').getByText('1 match.').waitFor();
+  assert.equal(await cancelInput.inputValue(), 'Keep this input');
+
+  const report = {
+    browser: await browser.version(),
+    viewport: '390x844 Chromium',
+    deployment: prefix,
+    coldMs,
+    warmMs,
+    runtimeBytes,
+    runtimeRequests: assetCount,
+    checked: ['keyboard', 'status', 'capture inspection', 'bounded output', 'timeout recovery', 'cancel during load', 'input preservation', 'nested asset paths'],
+  };
+  await writeFile('dist/m2-browser-measurements.json', JSON.stringify(report, null, 2) + '\n');
+  console.log(JSON.stringify(report));
+} finally {
+  await browser.close();
+  await new Promise(resolve => server.close(resolve));
+}
