@@ -3,6 +3,8 @@ import type { RunState, RunnerAdapter } from "./runner.js";
 
 export type { RunContext, RunnerAdapter } from "./runner.js";
 
+export type TryPaneMount = (() => void) & { reset(): void };
+
 export interface TryPaneOptions<Input, Result> {
   /** Return a snapshot of the current host input. */
   readInput(): Input;
@@ -14,7 +16,7 @@ export interface TryPaneOptions<Input, Result> {
 export function mountTryPane<Input, Result>(
   target: HTMLElement,
   options: TryPaneOptions<Input, Result>,
-): () => void {
+): TryPaneMount {
   const document = target.ownerDocument;
   const section = document.createElement("section");
   section.className = "try-pane";
@@ -74,8 +76,13 @@ export function mountTryPane<Input, Result>(
   render({ status: "idle" });
   target.append(section);
 
-  return () => {
+  const unmount = (() => {
     controller.dispose();
     section.remove();
+  }) as TryPaneMount;
+  unmount.reset = () => {
+    controller.cancel();
+    render({ status: "idle" });
   };
+  return unmount;
 }
