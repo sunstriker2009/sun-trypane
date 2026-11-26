@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: '24'
       - name: Build prototype image
-        run: docker build -t trypane-csharp-prototype:local prototype/csharp
+        run: docker build -t trypane-csharp-prototype:local-v2 prototype/csharp
       - name: Check compilation, diagnostics, cancellation and output limits
         run: node --test prototype/csharp/smoke.mjs
 

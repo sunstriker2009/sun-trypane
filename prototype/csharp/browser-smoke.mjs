@@ -23,14 +23,16 @@ try {
     delay(5000, undefined, { ref: false }).then(() => { throw new Error('Editor startup timed out.'); }),
   ]);
 
-  const post = (headers, body = 'Console.WriteLine("probe");') => fetch(origin + '/run', {
+  const post = (headers, input = { source: 'Console.WriteLine("probe");', stdin: '' }) => fetch(origin + '/run', {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=UTF-8', ...headers },
-    body,
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(input),
   });
   assert.equal((await post({ Origin: 'https://example.test' })).status, 403);
   assert.equal((await post({})).status, 403);
-  assert.equal((await post({ Origin: origin }, 'x'.repeat(32769))).status, 413);
+  assert.equal((await post({ Origin: origin }, { source: 'x'.repeat(32769), stdin: '' })).status, 413);
+  assert.equal((await post({ Origin: origin }, { source: '', stdin: 'é'.repeat(16385) })).status, 413);
+  assert.equal((await post({ Origin: origin }, { source: '', stdin: 123 })).status, 400);
 
   browser = await chromium.launch(process.env.TRYPANE_CHROME_PATH
     ? { executablePath: process.env.TRYPANE_CHROME_PATH, args: ['--no-sandbox'] }
@@ -39,6 +41,7 @@ try {
   page.setDefaultTimeout(35_000);
   await page.goto(origin);
   const code = page.getByRole('textbox', { name: 'C# source' });
+  const stdin = page.getByRole('textbox', { name: 'Standard input (optional)', exact: true });
   const run = page.getByRole('button', { name: 'Run', exact: true });
   const status = page.getByRole('status');
   const output = page.locator('.try-pane__output');
@@ -51,7 +54,8 @@ try {
   await status.getByText('Run failed. See diagnostics.').waitFor();
   assert.match(await output.textContent(), /error CS0103/);
 
-  const loop = 'Console.WriteLine("Still running"); while (true) { Thread.Sleep(50); }';
+  const loop = 'Console.WriteLine(Console.ReadLine()); while (true) { Thread.Sleep(50); }';
+  await stdin.fill('Still running');
   await code.fill(loop);
   await run.click();
   await output.getByText('Still running', { exact: false }).waitFor();
@@ -62,9 +66,11 @@ try {
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   await status.getByText('Cancelled').waitFor();
   assert.equal(await code.inputValue(), loop);
+  assert.equal(await stdin.inputValue(), 'Still running');
   assert.match(await output.textContent(), /Still running/);
 
-  await code.fill('Console.WriteLine("Fresh run");');
+  await stdin.fill('élan\n東京');
+  await code.fill('Console.WriteLine(Console.ReadLine() + " / " + Console.ReadLine()); Console.WriteLine(Console.ReadLine() is null ? "EOF" : "Unexpected input");');
   for (let attempt = 0; attempt < 20; attempt++) {
     const response = page.waitForResponse(result => result.url() === origin + '/run');
     await run.click();
@@ -73,7 +79,8 @@ try {
     await delay(250);
   }
   await status.getByText('Run complete').waitFor();
-  assert.match(await output.textContent(), /Fresh run/);
+  assert.match(await output.textContent(), /élan \/ 東京/);
+  assert.match(await output.textContent(), /EOF/);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
 } finally {
   await browser?.close();
