@@ -12,19 +12,9 @@ const adapter = new RegexAdapter(new URL('../runtime/wwwroot/regex-worker.mjs', 
 
 function renderResult(result: RegexResult, target: HTMLElement, snapshot: RegexInput): void {
   const document = target.ownerDocument;
-  const message = document.createElement('p');
-  if (result.status !== 'match') {
-    message.textContent = result.status === 'invalid' ? result.message
-      : result.status === 'timeout' ? 'The match timed out. Try shorter text.'
-      : result.status === 'no-match' ? 'No match.' : 'The Regex runner could not complete the test.';
-    target.append(message);
-    return;
-  }
+  if (result.status !== 'match') return;
   const matches = result;
   const count = matches.matches.length;
-  message.textContent = matches.truncated ? `Showing the first ${count} matches.`
-    : `${count} ${count === 1 ? 'match' : 'matches'}.`;
-  target.append(message);
 
   const highlighted = document.createElement('p');
   highlighted.className = 'highlighted-input';
@@ -72,5 +62,14 @@ mountTryPane(target, {
   },
   renderResult(result, target) {
     renderResult(result, target, submitted);
+  },
+  describeResult(result) {
+    if (result.status === 'invalid') return result.message;
+    if (result.status === 'no-match') return 'No match.';
+    if (result.status === 'timeout') return 'The match timed out. Try shorter text.';
+    if (result.status === 'error') return 'The Regex runner could not complete the test.';
+    const count = result.matches.length;
+    return result.truncated ? `Showing the first ${count} matches.`
+      : `${count} ${count === 1 ? 'match' : 'matches'}.`;
   },
 });
