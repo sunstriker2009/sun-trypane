@@ -8,6 +8,7 @@ export interface TryPaneOptions<Input, Result> {
   readInput(): Input;
   adapter: RunnerAdapter<Input, Result>;
   renderResult(result: Result, target: HTMLElement): void;
+  describeResult?(result: Result): string;
 }
 
 export function mountTryPane<Input, Result>(
@@ -59,6 +60,7 @@ export function mountTryPane<Input, Result>(
     if (state.status === "succeeded") {
       try {
         options.renderResult(state.result, result);
+        status.textContent = options.describeResult?.(state.result) ?? labels.succeeded;
       } catch {
         result.replaceChildren();
         status.textContent = "The run completed, but the result could not be displayed.";
