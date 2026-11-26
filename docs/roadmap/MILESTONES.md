@@ -22,6 +22,7 @@ Build the TryPane component and runner adapter in this repository, using [CodeFo
 | M9 · Browser C# compilation | Check a single editable C# source file in a browser worker. | Verify real compiler diagnostics, cancellation, and runtime transfer size on a static origin before considering public execution. | Compile-only Pages preview |
 | M10 · Browser execution feasibility | Compile a fixed console snippet and execute the emitted assembly in a browser worker. | Verify preset input and EOF, stdout, stderr, exit code, and exclusion from the public compiler build. | CI probe |
 | M11 · Browser execution boundary | Exercise fixed snippets in a browser worker served from a separate origin. | Verify app origin separation, cancellation, an execution deadline, capped output and a fresh rerun. Record memory and deployment requirements. | CI probe |
+| M12 · Browser linear memory cap | Limit the probe runtime’s WebAssembly linear memory to 256 MiB. | Inspect the published maximum, trigger an allocation failure with a fixed snippet, and verify a fresh run. | CI probe |
 
 ## M1 verification
 

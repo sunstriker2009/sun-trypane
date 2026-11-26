@@ -16,6 +16,10 @@
   <ItemGroup Condition="'$(EnableExecutionProbe)' != 'true'">
     <Compile Remove="ExecutionProbe.cs" />
   </ItemGroup>
+  <PropertyGroup Condition="'$(EnableExecutionProbe)' == 'true'">
+    <WasmBuildNative>true</WasmBuildNative>
+    <EmccMaximumHeapSize>268435456</EmccMaximumHeapSize>
+  </PropertyGroup>
   <ItemGroup Condition="'$(EnableExecutionProbe)' == 'true'">
     <!-- The fixed probe invokes these APIs from a dynamically emitted assembly. -->
     <TrimmerRootAssembly Include="System.Console;System.Linq" />
