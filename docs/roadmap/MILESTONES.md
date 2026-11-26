@@ -21,6 +21,7 @@ Build the TryPane component and runner adapter in this repository, using [CodeFo
 | M8 · Preset C# standard input | Accept input for console snippets in the local editor and CLI. | Verify input reads, UTF-8, end of file, size limits, and preservation across cancellation. | Implemented |
 | M9 · Browser C# compilation | Check a single editable C# source file in a browser worker. | Verify real compiler diagnostics, cancellation, and runtime transfer size on a static origin before considering public execution. | Compile-only Pages preview |
 | M10 · Browser execution feasibility | Compile a fixed console snippet and execute the emitted assembly in a browser worker. | Verify preset input and EOF, stdout, stderr, exit code, and exclusion from the public compiler build. | CI probe |
+| M11 · Browser execution boundary | Exercise fixed snippets in a browser worker served from a separate origin. | Verify app origin separation, cancellation, an execution deadline, capped output and a fresh rerun. Record memory and deployment requirements. | CI probe |
 
 ## M1 verification
 
