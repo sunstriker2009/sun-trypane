@@ -5,7 +5,8 @@ import { extname, resolve, sep } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { chromium } from 'playwright';
 
-const root = process.cwd();
+const siteRoot = process.env.TRYPANE_SITE_ROOT;
+const root = resolve(siteRoot ?? process.cwd());
 const prefix = '/nested/trypane/';
 const mime = {
   '.css': 'text/css',
@@ -56,6 +57,13 @@ try {
       assets.set(response.url(), Number(response.headers()['content-length'] ?? 0));
     }
   });
+  if (siteRoot) {
+    await page.goto(new URL("../", url).href);
+    await page.getByRole('link', { name: 'C# Regex', exact: true }).click();
+    assert.equal(page.url(), url);
+    await page.goBack();
+    assert.equal(await page.getByRole('link', { name: 'Live batch output' }).getAttribute('href'), 'demo/batch.html');
+  }
   await page.goto(url);
 
   const status = page.getByRole('status');

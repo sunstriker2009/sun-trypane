@@ -8,8 +8,13 @@ permissions:
   contents: read
 jobs:
   repository-validation:
+    outputs:
+      pages-source: ${{ steps.pages.outputs.source }}
     name: repository-validation
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
     steps:
       - uses: actions/checkout@v4
       - name: Validate repository foundation
@@ -34,7 +39,11 @@ jobs:
       - run: bash tools-build-runtime.sh
       - name: Build versioned Regex bundle
         run: bash tools-package-preview.sh "${{ github.sha }}"
+      - name: Stage the public demo site
+        run: bash tools-stage-site.sh "$RUNNER_TEMP/trypane-pages"
       - name: Check Regex and incremental output in Chromium
+        env:
+          TRYPANE_SITE_ROOT: ${{ runner.temp }}/trypane-pages
         shell: bash
         run: |
           set -euo pipefail
@@ -52,3 +61,36 @@ jobs:
             dist/
             demo/
           if-no-files-found: error
+      - name: Check the Pages source
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if source=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .build_type); then
+            echo "source=$source" >> "$GITHUB_OUTPUT"
+          fi
+          if [[ "${source:-}" != workflow ]]; then
+            echo "::notice::Select GitHub Actions in Settings → Pages, then run CI on main to publish the demos."
+          fi
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.pages.outputs.source == 'workflow'
+        with:
+          path: ${{ runner.temp }}/trypane-pages
+
+  deploy-pages:
+    needs: repository-validation
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.repository-validation.outputs.pages-source == 'workflow'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: trypane-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
