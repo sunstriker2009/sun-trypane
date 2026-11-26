@@ -43,3 +43,7 @@ python3 -m http.server 8000 --bind 127.0.0.1
 Open <http://127.0.0.1:8000/demo/regex.html>. Select **First match** or **Find all** to inspect highlighted text and captures. The first run downloads a .NET WebAssembly bundle. The adapter keeps a healthy worker for repeat runs and replaces it after cancellation or timeout. Each PR's CI uploads a preview artifact containing the compiled pane, demo and runtime assets. Serve the artifact root over HTTP to inspect it.
 
 [Embed the versioned Regex bundle](docs/INTEGRATION.md) · [Changelog](CHANGELOG.md) · [Release procedure](docs/operations/RELEASE.md)
+
+## C# snippet prototype
+
+[Run an editable C# console snippet locally](prototype/csharp/README.md) with .NET 10 in Docker.

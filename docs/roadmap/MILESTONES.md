@@ -16,6 +16,7 @@ Build the TryPane component and runner adapter in this repository, using [CodeFo
 | M3 · CodeFolio integration preview | Package a versioned pane and runtime bundle. Document embedding, host input and theme, worker asset paths, result rendering, errors, and browser support. Trial the pinned build in a CodeFolio Regex preview with host approval. | A host can embed a pinned build from the guide. The preview preserves current Regex behavior and host-owned inputs and saved test cases. Verify the preview can revert to its previous runner. | Deployed and accepted |
 | M4 · First release | Release the embeddable pane and C# Regex adapter under the SUN workflow. | Record the validation evidence, supported browsers, runtime limits, changelog, known limitations, and rollback procedure. Publish the verified bundle from an annotated tag on main. | [Published as v0.1.0](https://github.com/sunstriker2009/sun-trypane/releases/tag/v0.1.0) |
 | M5 · Incremental output | Prototype progress and diagnostics for a built-in operation. | Verify bounded output before completion, cancellation and stale output handling, and existing Regex compatibility. | Implemented in the batch demo |
+| M6 · Editable C# feasibility | Run a single C# console source file in a local container. | Verify compilation, diagnostics, output limits, cancellation and a fresh rerun. Record what a browser host integration still needs. | CLI prototype |
 
 ## M1 verification
 

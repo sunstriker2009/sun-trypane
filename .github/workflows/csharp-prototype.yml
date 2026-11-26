@@ -1,0 +1,24 @@
+name: C# prototype
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/csharp-prototype.yml'
+      - 'prototype/csharp/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build prototype image
+        run: docker build -t trypane-csharp-prototype:local prototype/csharp
+      - name: Check compilation, diagnostics, cancellation and output limits
+        run: node --test prototype/csharp/smoke.mjs
