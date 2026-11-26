@@ -3,26 +3,27 @@ import { randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
 import { open } from 'node:fs/promises';
 
-const image = 'trypane-csharp-prototype:local';
-const maxSourceBytes = 32 * 1024;
+import { maxSourceBytes, maxStdinBytes } from './limits.mjs';
+
+const image = 'trypane-csharp-prototype:local-v2';
 const maxOutputBytes = 64 * 1024;
 const runTimeoutMs = 30_000;
 
-async function readSource(path) {
+async function readInput(path, maxBytes, label) {
   const file = await open(path, constants.O_RDONLY | constants.O_NONBLOCK);
   try {
     const stat = await file.stat();
-    if (!stat.isFile() || stat.size > maxSourceBytes) {
-      throw new Error('Use a regular C# file up to 32 KiB.');
+    if (!stat.isFile() || stat.size > maxBytes) {
+      throw new Error(`Use a regular ${label} file up to 32 KiB.`);
     }
-    const buffer = Buffer.alloc(maxSourceBytes + 1);
+    const buffer = Buffer.alloc(maxBytes + 1);
     let length = 0;
     while (length < buffer.length) {
       const { bytesRead } = await file.read(buffer, length, buffer.length - length);
       if (bytesRead === 0) return buffer.subarray(0, length);
       length += bytesRead;
     }
-    throw new Error('Use a C# file up to 32 KiB.');
+    throw new Error(`Use a ${label} file up to 32 KiB.`);
   } finally {
     await file.close();
   }
@@ -32,7 +33,7 @@ function docker(args) {
   return spawnSync('docker', args, { encoding: 'utf8', timeout: 8_000 });
 }
 
-async function run(source) {
+async function run(source, stdin) {
   const name = 'trypane-csharp-' + randomUUID();
   let stopped;
   let stopMessage;
@@ -55,7 +56,7 @@ async function run(source) {
     '--cpus=1', '--ulimit=core=0', '--log-driver=none',
     '--tmpfs=/work:rw,nosuid,nodev,noexec,size=64m,mode=1777',
     '--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=32m,mode=1777',
-    image,
+    image, String(source.length),
   ]);
   child = created.status === 0
     ? spawn('docker', ['start', '--attach', '--interactive', name])
@@ -82,7 +83,7 @@ async function run(source) {
       child.once('error', reject);
       child.once('close', code => resolve(code ?? 125));
     });
-    child.stdin.end(source);
+    child.stdin.end(Buffer.concat([source, stdin]));
     const code = await exit;
     if (stopMessage) console.error(stopMessage);
     return stopped ?? code;
@@ -98,8 +99,13 @@ async function run(source) {
 }
 
 try {
-  if (process.argv.length !== 3) throw new Error('Usage: node prototype/csharp/run.mjs PATH_TO_CS_FILE');
-  process.exitCode = await run(await readSource(process.argv[2]));
+  const [sourcePath, stdinPath, ...extra] = process.argv.slice(2);
+  if (!sourcePath || extra.length) {
+    throw new Error('Usage: node prototype/csharp/run.mjs PATH_TO_CS_FILE [STDIN_FILE]');
+  }
+  const source = await readInput(sourcePath, maxSourceBytes, 'C# source');
+  const stdin = stdinPath ? await readInput(stdinPath, maxStdinBytes, 'standard input') : Buffer.alloc(0);
+  process.exitCode = await run(source, stdin);
 } catch (error) {
   console.error(error.message);
   process.exitCode = 125;

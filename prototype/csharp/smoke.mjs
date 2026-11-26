@@ -8,12 +8,18 @@ import { test } from 'node:test';
 
 const runner = fileURLToPath(new URL('./run.mjs', import.meta.url));
 
-async function runSnippet(source, { cancel = false } = {}) {
+async function runSnippet(source, { cancel = false, stdin } = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'trypane-csharp-smoke-'));
   try {
     const path = join(dir, 'Demo.cs');
     await writeFile(path, source);
-    const child = spawn(process.execPath, [runner, path]);
+    const args = [runner, path];
+    if (stdin !== undefined) {
+      const stdinPath = join(dir, 'stdin.txt');
+      await writeFile(stdinPath, stdin);
+      args.push(stdinPath);
+    }
+    const child = spawn(process.execPath, args);
     let stdout = '';
     let stderr = '';
     child.stdout.setEncoding('utf8').on('data', chunk => {
@@ -32,9 +38,9 @@ async function runSnippet(source, { cancel = false } = {}) {
 }
 
 test('compiles a console snippet and forwards stdout and stderr', async () => {
-  const run = await runSnippet('Console.WriteLine(Enumerable.Range(1, 5).Sum()); Console.Error.WriteLine("Note");');
+  const run = await runSnippet('Console.WriteLine(Enumerable.Range(1, 5).Sum()); Console.Error.WriteLine("Note"); Console.WriteLine(Console.ReadLine() is null ? "EOF" : "Unexpected input");');
   assert.equal(run.status, 0, run.stderr);
-  assert.equal(run.stdout.trim(), '15');
+  assert.equal(run.stdout.trim(), '15\nEOF');
   assert.equal(run.stderr.trim(), 'Note');
 });
 
@@ -60,4 +66,10 @@ test('stops a snippet at the output cap', async () => {
   assert.equal(run.status, 125, run.stderr);
   assert.equal(Buffer.byteLength(run.stdout), 64 * 1024);
   assert.match(run.stderr, /Output limit reached/);
+});
+
+test('reads preset input separately from source and reaches EOF', async () => {
+  const run = await runSnippet('Console.WriteLine("é: " + Console.ReadLine()); Console.WriteLine(Console.ReadLine() is null ? "EOF" : "Unexpected input");', { stdin: '東京' });
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(run.stdout.trim(), 'é: 東京\nEOF');
 });

@@ -5,13 +5,13 @@ type RunMessage =
   | { kind: "progress" | "diagnostic"; text: string }
   | { kind: "exit"; code: number };
 
-const runner: RunnerAdapter<string, number> = {
+const runner: RunnerAdapter<{ source: string; stdin: string }, number> = {
   async load() {},
-  async run(source, { signal, emit }) {
+  async run(input, { signal, emit }) {
     const response = await fetch("/run", {
       method: "POST",
-      headers: { "Content-Type": "text/plain;charset=UTF-8" },
-      body: source,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
       signal,
     });
     if (!response.ok) throw new Error(await response.text());
@@ -41,13 +41,14 @@ const runner: RunnerAdapter<string, number> = {
 };
 
 const input = document.querySelector<HTMLTextAreaElement>("#source");
+const stdin = document.querySelector<HTMLTextAreaElement>("#stdin");
 const target = document.querySelector<HTMLElement>("#try-it");
-if (!input || !target) throw new Error("The editor is missing its controls.");
+if (!input || !stdin || !target) throw new Error("The editor is missing its controls.");
 
 mountTryPane(target, {
   adapter: runner,
   showOutput: true,
-  readInput: () => input.value,
+  readInput: () => ({ source: input.value, stdin: stdin.value }),
   renderResult(code, target) {
     const result = document.createElement("p");
     result.textContent = `Exit code: ${code}`;

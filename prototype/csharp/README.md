@@ -5,12 +5,20 @@ This command line prototype runs one C# console source file using .NET 10. It ac
 Use Node.js 24 and a local Docker Engine running Linux containers. From the repository root:
 
 ```sh
-docker build -t trypane-csharp-prototype:local prototype/csharp
+docker build -t trypane-csharp-prototype:local-v2 prototype/csharp
 printf '%s\n' 'Console.WriteLine(Enumerable.Range(1, 5).Sum());' > /tmp/trypane-example.cs
 node prototype/csharp/run.mjs /tmp/trypane-example.cs
 ```
 
-The example prints `15`. Compiler diagnostics and program errors go to stderr. Use Ctrl+C to cancel. Each invocation accepts up to 32 KiB of source, stops when output exceeds 64 KiB across stdout and stderr, and allows 30 seconds after container creation for compilation and execution. The runner removes the container before returning. The source file supplies the container's stdin during setup. The compiled program sees end of file on stdin.
+The example prints `15`. Compiler diagnostics and program errors go to stderr. Use Ctrl+C to cancel. Each invocation accepts up to 32 KiB of source, stops when output exceeds 64 KiB across stdout and stderr, and allows 30 seconds after container creation for compilation and execution. The runner removes the container before returning. Pass an optional second file to supply up to 32 KiB of standard input:
+
+```sh
+printf '%s\n' 'Console.WriteLine($"Hello, {Console.ReadLine()}");' > /tmp/trypane-example.cs
+printf '%s\n' 'Ada' > /tmp/trypane-stdin.txt
+node prototype/csharp/run.mjs /tmp/trypane-example.cs /tmp/trypane-stdin.txt
+```
+
+This prints `Hello, Ada`. The program reads the supplied bytes and then reaches end of file. An omitted or empty input file gives immediate end of file.
 
 Run the Docker smoke checks with `node --test prototype/csharp/smoke.mjs`.
 
@@ -25,7 +33,7 @@ npm run build
 node prototype/csharp/serve.mjs
 ```
 
-Open <http://127.0.0.1:8001/> on the same machine. Edit the C# source and choose **Run**. Output and diagnostics arrive while the run is active, and the editor shows the exit code afterwards. Choose **Cancel** to stop a run. The editor retains your source and any output already shown. A new run may have to wait briefly for Docker to finish cleanup.
+Open <http://127.0.0.1:8001/> on the same machine. Edit the C# source, enter any input for `Console.ReadLine()` in **Standard input**, and choose **Run**. Both fields are captured at the start of each run. Output and diagnostics arrive while the run is active, and the editor shows the exit code afterwards. Choose **Cancel** to stop a run. The editor retains your source and any output already shown. A new run may have to wait briefly for Docker to finish cleanup.
 
 The listener binds to IPv4 loopback, serves a fixed set of editor assets, and accepts one run at a time from its own browser origin. The server cancels active runs when their browser connection closes. Keep the listener local to your machine. It assumes you trust other software and users with access to that machine.
 

@@ -18,6 +18,7 @@ Build the TryPane component and runner adapter in this repository, using [CodeFo
 | M5 · Incremental output | Prototype progress and diagnostics for a built-in operation. | Verify bounded output before completion, cancellation and stale output handling, and existing Regex compatibility. | Implemented in the batch demo |
 | M6 · Editable C# feasibility | Run a single C# console source file in a local container. | Verify compilation, diagnostics, output limits, cancellation and a fresh rerun. | CLI prototype |
 | M7 · Local C# editor | Connect the browser pane to the local container runner over loopback. | Edit a snippet, inspect streamed output and diagnostics, cancel and rerun, and reject requests from other origins. | Local browser prototype |
+| M8 · Preset C# standard input | Accept input for console snippets in the local editor and CLI. | Verify input reads, UTF-8, end of file, size limits, and preservation across cancellation. | Implemented |
 
 ## M1 verification
 

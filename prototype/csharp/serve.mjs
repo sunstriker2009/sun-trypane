@@ -5,11 +5,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { maxSourceBytes, maxStdinBytes } from './limits.mjs';
+
 const host = '127.0.0.1';
 const port = Number(process.argv[2] ?? 8001);
 const root = new URL('../../', import.meta.url);
 const runner = fileURLToPath(new URL('./run.mjs', import.meta.url));
-const maxSourceBytes = 32 * 1024;
+// A JSON escape can expand one input byte to six bytes.
+const maxBodyBytes = 6 * (maxSourceBytes + maxStdinBytes) + 128;
 const assets = new Map([
   ['/', ['prototype/csharp/editor.html', 'text/html']],
   ['/demo/demo.css', ['demo/demo.css', 'text/css']],
@@ -27,21 +30,35 @@ async function run(request, response) {
   if (active) return reply(response, 409, 'A run is still active or stopping. Try again shortly.');
   const length = Number(request.headers['content-length']);
   if (!Number.isInteger(length)) return reply(response, 411, 'Source length is required.');
-  if (length > maxSourceBytes) return reply(response, 413, 'Use C# source up to 32 KiB.');
+  if (length > maxBodyBytes) return reply(response, 413, 'The run request is too large.');
 
   active = true;
   let directory;
   let exitCode;
   try {
-    const source = [];
-    for await (const chunk of request) source.push(chunk);
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
     if (response.destroyed) return;
+    let input;
+    try {
+      input = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)));
+    } catch {
+      return reply(response, 400, 'Send valid UTF-8 JSON.');
+    }
+    if (typeof input?.source !== 'string' || typeof input?.stdin !== 'string') {
+      return reply(response, 400, 'Provide C# source and standard input as text.');
+    }
+    if (Buffer.byteLength(input.source) > maxSourceBytes || Buffer.byteLength(input.stdin) > maxStdinBytes) {
+      return reply(response, 413, 'C# source and standard input each allow up to 32 KiB.');
+    }
     directory = await mkdtemp(join(tmpdir(), 'trypane-csharp-editor-'));
     const path = join(directory, 'Snippet.cs');
-    await writeFile(path, Buffer.concat(source));
+    const stdinPath = join(directory, 'stdin.txt');
+    await writeFile(path, input.source);
+    await writeFile(stdinPath, input.stdin);
     if (response.destroyed) return;
 
-    const child = spawn(process.execPath, [runner, path], { stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, [runner, path, stdinPath], { stdio: ['ignore', 'pipe', 'pipe'] });
     const cancel = () => child.kill('SIGINT');
     response.once('close', cancel);
     try {
@@ -79,8 +96,8 @@ const server = createServer({ requestTimeout: 10_000, headersTimeout: 5_000, con
   try {
     if (request.method === 'POST' && request.url === '/run') {
       if (request.headers.origin !== 'http://' + authority) return reply(response, 403, 'Use the local editor to run a snippet.');
-      if (request.headers['content-type'] !== 'text/plain;charset=UTF-8') {
-        return reply(response, 415, 'Send C# source as UTF-8 plain text.');
+      if (request.headers['content-type'] !== 'application/json') {
+        return reply(response, 415, 'Send C# source and standard input as JSON.');
       }
       if (request.headers['transfer-encoding']) return reply(response, 400, 'Use a fixed source length.');
       return await run(request, response);
