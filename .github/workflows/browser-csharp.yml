@@ -24,13 +24,15 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - run: dotnet workload install wasm-tools --skip-manifest-update
+        working-directory: prototype/browser-csharp
       - name: Build browser runtime
+        working-directory: prototype/browser-csharp
         run: |
           probe=false
           if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then probe=true; fi
-          dotnet publish prototype/browser-csharp/TryPane.Compiler.csproj -c Release -o dist/compiler -p:EnableExecutionProbe="$probe"
+          dotnet publish TryPane.Compiler.csproj -c Release -o ../../dist/compiler -p:EnableExecutionProbe="$probe"
           if [[ "$probe" == true ]]; then
-            cp prototype/browser-csharp/probe-worker.mjs dist/compiler/wwwroot/
+            cp probe-worker.mjs ../../dist/compiler/wwwroot/
           fi
       - name: Check browser C# in Chromium
         run: |

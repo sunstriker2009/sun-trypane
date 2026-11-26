@@ -28,6 +28,24 @@ public static partial class SnippetCompiler
             return Console.ReadLine() is null ? 7 : 1;
             """,
             "output" => """Console.Write(new string('x', 6000)); Console.Error.Write(new string('y', 6000)); return 0;""",
+            "memory" => """
+                var retained = new byte[20][];
+                try
+                {
+                    for (int i = 0; i < retained.Length; i++)
+                        retained[i] = new byte[16 * 1024 * 1024];
+                }
+                catch (OutOfMemoryException)
+                {
+                    Console.WriteLine("Allocation stopped at the memory limit.");
+                    return 8;
+                }
+                finally
+                {
+                    GC.KeepAlive(retained);
+                }
+                return 1;
+                """,
             "loop" => """while (true) { }""",
             _ => throw new ArgumentException("Unknown fixed probe."),
         };

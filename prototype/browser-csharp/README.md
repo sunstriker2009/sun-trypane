@@ -28,4 +28,6 @@ The Browser C# compiler pull request workflow builds an optional execution probe
 
 The Chromium harness puts the frame and worker on a separate loopback origin. It verifies that the frame cannot read the app DOM and that the worker's response policy blocks requests to the app. It also checks termination by Cancel or deadline, a fresh rerun, and a 4,096-character capture limit per console stream. The deadline starts at invocation and a separate timer covers startup.
 
-These tests establish a browser boundary for the known probes. They do not establish a hard memory limit or prove that arbitrary assemblies can be run safely. Before enabling editable execution, choose a delivery origin capable of serving the worker policy and validate memory behavior and browser compatibility.
+The execution probe links a 256 MiB maximum into the WebAssembly module. CI checks the published binary and verifies that a fixed allocation case receives an out-of-memory error, followed by a successful run in a fresh worker. The cap applies to the module's linear memory. Browser engine memory, JavaScript allocations and worker overhead are outside that cap.
+
+These tests exercise known probes. Before enabling editable execution, choose a delivery origin that can serve the worker policy and validate the broader compatibility and resource behavior.
