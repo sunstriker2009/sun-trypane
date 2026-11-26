@@ -8,6 +8,10 @@ TryPane is an embeddable **Try It** pane for testing code and inspecting results
 
 [Development milestones](docs/roadmap/MILESTONES.md)
 
+## Public demos
+
+The [TryPane demo site](https://sunstriker2009.github.io/sun-trypane/) links to the C# Regex and live batch output examples. The CI workflow builds and tests the files before publishing them from `main` when Settings → Pages → Source is set to **GitHub Actions**.
+
 ## Run the demo locally
 
 Use Node.js 24 and Python 3. From the repository root:
