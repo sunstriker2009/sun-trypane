@@ -11,11 +11,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
     <PackageDownload Include="Microsoft.NETCore.App.Ref" Version="[$(ReferencePackVersion)]" />
-    <CompilerReference Include="System.Runtime;System.Console;System.Linq;System.Collections" />
+    <CompilerReference Include="System.Runtime.dll;System.Console.dll;System.Linq.dll;System.Collections.dll" />
   </ItemGroup>
   <Target Name="EmbedCompilerReferences" BeforeTargets="PrepareForBuild">
     <ItemGroup>
-      <EmbeddedResource Include="@(CompilerReference->'$(NuGetPackageRoot)microsoft.netcore.app.ref/$(ReferencePackVersion)/ref/net10.0/%(Identity).dll')"
+      <EmbeddedResource Include="@(CompilerReference->'$(NuGetPackageRoot)microsoft.netcore.app.ref/$(ReferencePackVersion)/ref/net10.0/%(Identity)')"
                         LogicalName="CompilerReference.%(Filename).dll" />
     </ItemGroup>
   </Target>
