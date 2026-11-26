@@ -17,7 +17,10 @@ const adapter: RunnerAdapter<string, CheckResult> = {
         { type: 'module' },
       );
       const abort = () => finish(() => reject(signal.reason));
-      const deadline = setTimeout(() => fail('The compiler check timed out.'), 45_000);
+      let ready = false;
+      const deadline = setTimeout(() => fail(ready
+        ? 'The compiler check timed out.'
+        : 'The browser compiler took too long to start.'), 45_000);
       function finish(complete: () => void): void {
         clearTimeout(deadline);
         signal.removeEventListener('abort', abort);
@@ -29,11 +32,13 @@ const adapter: RunnerAdapter<string, CheckResult> = {
       }
       signal.addEventListener('abort', abort, { once: true });
       worker.onmessage = ({ data }) => {
-        if (data.error) fail(data.error);
+        if (data.ready) {
+          ready = true;
+          worker.postMessage(source);
+        } else if (data.error) fail(data.error);
         else finish(() => resolve(data.result));
       };
       worker.onerror = () => fail('The compiler worker could not load.');
-      worker.postMessage(source);
     });
   },
 };
