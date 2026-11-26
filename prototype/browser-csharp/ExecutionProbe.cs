@@ -28,29 +28,19 @@ public static partial class SnippetCompiler
 
         var entryPoint = Assembly.Load(image.ToArray()).EntryPoint
             ?? throw new InvalidOperationException("The probe has no entry point.");
-        var oldIn = Console.In;
-        var oldOut = Console.Out;
-        var oldError = Console.Error;
+        // Browser WASM does not provide a default stdin. This one-shot worker
+        // installs all three streams and is discarded after reporting the result.
         using var stdin = new StringReader("Ada");
         using var stdout = new StringWriter(CultureInfo.InvariantCulture);
         using var stderr = new StringWriter(CultureInfo.InvariantCulture);
-        try
-        {
-            Console.SetIn(stdin);
-            Console.SetOut(stdout);
-            Console.SetError(stderr);
-            var exitCode = (int)(entryPoint.Invoke(null, [Array.Empty<string>()])
-                ?? throw new InvalidOperationException("The probe did not return an exit code."));
-            return JsonSerializer.Serialize(
-                new ExecutionProbeResult(exitCode, stdout.ToString(), stderr.ToString()),
-                ExecutionProbeJson.Default.ExecutionProbeResult);
-        }
-        finally
-        {
-            Console.SetIn(oldIn);
-            Console.SetOut(oldOut);
-            Console.SetError(oldError);
-        }
+        Console.SetIn(stdin);
+        Console.SetOut(stdout);
+        Console.SetError(stderr);
+        var exitCode = (int)(entryPoint.Invoke(null, [Array.Empty<string>()])
+            ?? throw new InvalidOperationException("The probe did not return an exit code."));
+        return JsonSerializer.Serialize(
+            new ExecutionProbeResult(exitCode, stdout.ToString(), stderr.ToString()),
+            ExecutionProbeJson.Default.ExecutionProbeResult);
     }
 }
 
