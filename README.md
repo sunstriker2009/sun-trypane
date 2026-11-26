@@ -46,4 +46,4 @@ Open <http://127.0.0.1:8000/demo/regex.html>. Select **First match** or **Find a
 
 ## C# snippet prototype
 
-[Run an editable C# console snippet locally](prototype/csharp/README.md) with .NET 10 in Docker.
+[Run an editable C# console snippet locally](prototype/csharp/README.md) from the browser editor or command line with .NET 10 in Docker.

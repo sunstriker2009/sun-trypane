@@ -4,6 +4,9 @@ on:
     paths:
       - '.github/workflows/csharp-prototype.yml'
       - 'prototype/csharp/**'
+      - 'src/**'
+      - 'tsconfig.json'
+      - 'demo/demo.css'
   workflow_dispatch:
 
 permissions:
@@ -22,3 +25,15 @@ jobs:
         run: docker build -t trypane-csharp-prototype:local prototype/csharp
       - name: Check compilation, diagnostics, cancellation and output limits
         run: node --test prototype/csharp/smoke.mjs
+
+      - name: Check the browser editor in Chromium
+        run: |
+          npm ci
+          npm run build
+          npm install --no-save --no-package-lock playwright@1.56.1
+          if command -v google-chrome >/dev/null; then
+            TRYPANE_CHROME_PATH=$(command -v google-chrome) node prototype/csharp/browser-smoke.mjs
+          else
+            npx playwright install chromium --with-deps
+            node prototype/csharp/browser-smoke.mjs
+          fi

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TryPane C# editor</title>
+    <link rel="stylesheet" href="/demo/demo.css">
+    <script type="module" src="/dist/prototype/csharp/editor.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>TryPane C# editor</h1>
+      <p>Edit and run one C# console snippet in your local Docker runner.</p>
+      <label for="source">C# source</label>
+      <textarea id="source" rows="12" spellcheck="false" autocomplete="off">var values = Enumerable.Range(1, 5);
+Console.WriteLine($"Sum: {values.Sum()}");</textarea>
+      <div id="try-it"></div>
+    </main>
+  </body>
+</html>
