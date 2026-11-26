@@ -33,7 +33,7 @@ npm run build
 node prototype/csharp/serve.mjs
 ```
 
-Open <http://127.0.0.1:8001/> on the same machine. Edit the C# source, enter any input for `Console.ReadLine()` in **Standard input**, and choose **Run**. Both fields are captured at the start of each run. Output and diagnostics arrive while the run is active, and the editor shows the exit code afterwards. Choose **Cancel** to stop a run. The editor retains your source and any output already shown. A new run may have to wait briefly for Docker to finish cleanup.
+Open <http://127.0.0.1:8001/> on the same machine. Edit the C# source, enter any input for `Console.ReadLine()` in **Standard input**, and choose **Run**. Both fields are captured at the start of each run. Output and diagnostics arrive while the run is active, and the editor shows the exit code afterwards. Select a compiler location to move the cursor to that line and column. Editing the source clears the old locations. Choose **Cancel** to stop a run. The editor retains your source and any output already shown. A new run may have to wait briefly for Docker to finish cleanup.
 
 The listener binds to IPv4 loopback, serves a fixed set of editor assets, and accepts one run at a time from its own browser origin. The server cancels active runs when their browser connection closes. Keep the listener local to your machine. It assumes you trust other software and users with access to that machine.
 
