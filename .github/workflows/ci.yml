@@ -39,9 +39,11 @@ jobs:
       - run: bash tools-build-runtime.sh
       - name: Build versioned Regex bundle
         run: bash tools-package-preview.sh "${{ github.sha }}"
+      - name: Build the browser C# compiler
+        run: dotnet publish prototype/browser-csharp/TryPane.Compiler.csproj -c Release -o "$RUNNER_TEMP/trypane-compiler"
       - name: Stage the public demo site
-        run: bash tools-stage-site.sh "$RUNNER_TEMP/trypane-pages"
-      - name: Check Regex and incremental output in Chromium
+        run: bash tools-stage-site.sh "$RUNNER_TEMP/trypane-pages" "$RUNNER_TEMP/trypane-compiler"
+      - name: Check the public demos in Chromium
         env:
           TRYPANE_SITE_ROOT: ${{ runner.temp }}/trypane-pages
         shell: bash

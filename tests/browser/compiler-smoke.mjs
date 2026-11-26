@@ -3,13 +3,7 @@ import { writeFile } from 'node:fs/promises';
 import { performance } from 'node:perf_hooks';
 import { chromium } from 'playwright';
 
-const origin = process.argv[2];
-if (!origin) throw new Error('Pass the local static server URL.');
-const browser = await chromium.launch(process.env.TRYPANE_CHROME_PATH
-  ? { executablePath: process.env.TRYPANE_CHROME_PATH, args: ['--no-sandbox'] }
-  : { args: ['--no-sandbox'] });
-
-try {
+export async function checkCompiler(browser, origin) {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   page.setDefaultTimeout(50_000);
   page.on('pageerror', error => console.error(error));
@@ -62,12 +56,25 @@ try {
   await check.click();
   await status.getByText('Compilation passed.').waitFor();
   assert.match(await result.textContent(), /warning CS1030.*Browser test/);
-  assert.ok(requests.every(request => request.method === 'GET' && request.url.startsWith(origin)));
+  assert.ok(requests.every(request => request.method === 'GET' && new URL(request.url).origin === new URL(origin).origin));
   assert.ok(requests.every(request => !request.url.includes('MissingValue')));
+  assert.match(await result.textContent(), /Check time: [0-9.]+ s/);
 
   const report = { browser: await browser.version(), coldMs, runtimeBytes, runtimeRequests: bytes.size };
   await writeFile('dist/compiler-measurements.json', JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify(report));
-} finally {
-  await browser.close();
+  await page.close();
+}
+
+if (import.meta.main) {
+  const origin = process.argv[2];
+  if (!origin) throw new Error('Pass the local static server URL.');
+  const browser = await chromium.launch(process.env.TRYPANE_CHROME_PATH
+    ? { executablePath: process.env.TRYPANE_CHROME_PATH, args: ['--no-sandbox'] }
+    : { args: ['--no-sandbox'] });
+  try {
+    await checkCompiler(browser, origin);
+  } finally {
+    await browser.close();
+  }
 }

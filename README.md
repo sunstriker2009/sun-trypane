@@ -10,7 +10,7 @@ TryPane is an embeddable **Try It** pane for testing code and inspecting results
 
 ## Public demos
 
-The [TryPane demo site](https://sunstriker2009.github.io/sun-trypane/) links to the C# Regex and live batch output examples. The CI workflow builds and tests the files before publishing them from `main` when Settings → Pages → Source is set to **GitHub Actions**.
+The [TryPane demo site](https://sunstriker2009.github.io/sun-trypane/) links to C# Regex, live batch output, and the compile-only C# preview. The CI workflow builds and tests the files before publishing them from `main` when Settings → Pages → Source is set to **GitHub Actions**.
 
 ## Run the demo locally
 
