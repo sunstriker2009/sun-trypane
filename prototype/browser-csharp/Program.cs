@@ -6,7 +6,6 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Basic.Reference.Assemblies;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -17,11 +16,20 @@ public static partial class SnippetCompiler
 
     private static readonly MetadataReference[] References =
     [
-        Net100.References.SystemRuntime,
-        Net100.References.SystemConsole,
-        Net100.References.SystemLinq,
-        Net100.References.SystemCollections,
+        LoadReference("System.Runtime.dll"),
+        LoadReference("System.Console.dll"),
+        LoadReference("System.Linq.dll"),
+        LoadReference("System.Collections.dll"),
     ];
+
+    private static MetadataReference LoadReference(string name)
+    {
+        using var resource = typeof(SnippetCompiler).Assembly.GetManifestResourceStream("CompilerReference." + name)
+            ?? throw new InvalidOperationException("Missing C# reference: " + name);
+        using var image = new MemoryStream();
+        resource.CopyTo(image);
+        return MetadataReference.CreateFromImage(image.ToArray(), filePath: name);
+    }
 
     public static void Main() { }
 
