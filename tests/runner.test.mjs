@@ -120,3 +120,43 @@ test("dispose aborts active work, suppresses its output and prevents further run
   await runner.start(() => assert.fail("Disposed pane read host input"));
   assert.deepEqual(states.map(({ status }) => status), ["loading", "running"]);
 });
+
+test("only the active run can publish output", async () => {
+  const contexts = [];
+  const pending = [];
+  const entries = [];
+  const runner = new RunController({
+    load: async () => {},
+    run: async (_, context) => {
+      contexts.push(context);
+      const run = Promise.withResolvers();
+      pending.push(run);
+      return run.promise;
+    },
+  }, () => {}, entry => entries.push(entry.text));
+
+  const emit = (index, text) => contexts[index].emit({ kind: "progress", text });
+  const first = runner.start(() => "");
+  await Promise.resolve();
+  emit(0, "first");
+  runner.cancel();
+  emit(0, "after cancel");
+
+  const second = runner.start(() => "");
+  await Promise.resolve();
+  emit(0, "during second");
+  emit(1, "second");
+  pending[1].resolve();
+  await second;
+  emit(1, "after completion");
+
+  const third = runner.start(() => "");
+  await Promise.resolve();
+  emit(2, "third");
+  runner.dispose();
+  emit(2, "after disposal");
+  pending[0].resolve();
+  pending[2].resolve();
+  await Promise.all([first, third]);
+  assert.deepEqual(entries, ["first", "second", "third"]);
+});

@@ -15,7 +15,7 @@ Build the TryPane component and runner adapter in this repository, using [CodeFo
 | M2 · Runtime and browser acceptance | Validate the first adapter in Chromium at a mobile viewport. Exercise worker lifecycle, keyboard controls, and failure recovery. | Verify cold start, warm rerun, cancellation, timeout, rerun after cancellation, and teardown with input intact. Verify focus, status announcements, bounded output, mobile layout, and error recovery. Record the browser, deployment path, runtime transfer size, and cold and warm timings for the CI run. | Accepted with iPhone Safari waived |
 | M3 · CodeFolio integration preview | Package a versioned pane and runtime bundle. Document embedding, host input and theme, worker asset paths, result rendering, errors, and browser support. Trial the pinned build in a CodeFolio Regex preview with host approval. | A host can embed a pinned build from the guide. The preview preserves current Regex behavior and host-owned inputs and saved test cases. Verify the preview can revert to its previous runner. | Deployed and accepted |
 | M4 · First release | Release the embeddable pane and C# Regex adapter under the SUN workflow. | Record the validation evidence, supported browsers, runtime limits, changelog, known limitations, and rollback procedure. Publish the verified bundle from an annotated tag on main. | [Published as v0.1.0](https://github.com/sunstriker2009/sun-trypane/releases/tag/v0.1.0) |
-| M5 · Incremental output | Prototype progress and diagnostics for a built-in operation. | Verify bounded output before completion, cancellation and stale output handling, and existing Regex compatibility. | Proposed |
+| M5 · Incremental output | Prototype progress and diagnostics for a built-in operation. | Verify bounded output before completion, cancellation and stale output handling, and existing Regex compatibility. | Implemented in the batch demo |
 
 ## M1 verification
 
@@ -40,7 +40,7 @@ GitHub Releases distributes the compiled pane, C# Regex worker, and runtime as `
 
 ## Follow-up exploration
 
-The [runner comparison](RUNNER-COMPARISON.md) compares TryPane with Runno and Pyodide and proposes a small incremental output milestone. Interactive stdin, multiple files, and general script execution need a concrete host use case.
+The [runner comparison](RUNNER-COMPARISON.md) compares TryPane with Runno and Pyodide and describes the incremental output prototype. Interactive stdin, multiple files, and general script execution need a concrete host use case.
 
 ## M0 foundation
 

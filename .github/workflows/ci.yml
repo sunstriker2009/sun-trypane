@@ -34,7 +34,7 @@ jobs:
       - run: bash tools-build-runtime.sh
       - name: Build versioned Regex bundle
         run: bash tools-package-preview.sh "${{ github.sha }}"
-      - name: Check Regex in Chromium
+      - name: Check Regex and incremental output in Chromium
         shell: bash
         run: |
           set -euo pipefail
