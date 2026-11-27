@@ -13,10 +13,17 @@ server {
     }
 
     location = /frame {
-        add_header Content-Security-Policy "default-src 'none'; worker-src 'self'; frame-ancestors ${TRYPANE_APP_ORIGIN}" always;
+        add_header Content-Security-Policy "default-src 'none'; script-src 'self'; worker-src 'self'; frame-ancestors ${TRYPANE_APP_ORIGIN}" always;
         add_header X-Content-Type-Options nosniff always;
         limit_except GET { deny all; }
-        try_files /frame.html =404;
+        default_type text/html;
+        alias /etc/nginx/conf.d/frame.html;
+    }
+
+    location = /frame.mjs {
+        add_header X-Content-Type-Options nosniff always;
+        limit_except GET { deny all; }
+        try_files $uri =404;
     }
 
     location ^~ /dist/compiler/wwwroot/ {
