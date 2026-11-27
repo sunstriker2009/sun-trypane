@@ -6,6 +6,7 @@ on:
       - 'prototype/csharp/**'
       - 'prototype/container-runner.mjs'
       - 'prototype/snippet-limits.mjs'
+      - 'prototype/local-editor*'
       - 'src/**'
       - 'tsconfig.json'
       - 'demo/demo.css'

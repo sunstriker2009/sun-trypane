@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TryPane Go editor</title>
+    <link rel="stylesheet" href="/demo/demo.css">
+    <script type="module" src="/dist/prototype/go/editor.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>TryPane Go editor</h1>
+      <p>Edit and run one Go console snippet in your local Docker runner.</p>
+      <label for="source">Go source</label>
+      <textarea id="source" rows="12" spellcheck="false" autocomplete="off">package main
+
+import "fmt"
+
+func main() {
+    total := 0
+    for value := 1; value &lt;= 5; value++ {
+        total += value
+    }
+    fmt.Println("Sum:", total)
+}
+</textarea>
+      <label for="stdin">Standard input (optional)</label>
+      <textarea id="stdin" rows="4" spellcheck="false" autocomplete="off"></textarea>
+      <div id="try-it"></div>
+    </main>
+  </body>
+</html>
