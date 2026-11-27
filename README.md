@@ -6,7 +6,7 @@
 
 TryPane is an embeddable **Try It** pane for testing code and inspecting results alongside a host editor or reference tool.
 
-[Development milestones](docs/roadmap/MILESTONES.md)
+[Development milestones](docs/roadmap/MILESTONES.md) · [Runner playbook](docs/operations/RUNNER-PLAYBOOK.md)
 
 ## Examples by use case
 
