@@ -36,6 +36,6 @@ These tests exercise known probes. The [hosting guide](runner-host/README.md) re
 
 Pull request CI builds a separate runtime with `EnableEditableRehearsal=true`. The rehearsal page connects the editable source and preset input fields to TryPane. The page sends one run to the isolated frame using a fresh message port. The frame starts a disposable worker. Chromium checks edited source, compiler errors with line numbers, bounds, the deadline, cancellation with source and input preserved, and a successful rerun.
 
-The rehearsal accepts up to 8,192 UTF-16 code units of source and 4,096 of preset input. The compiler uses the same reference assemblies as the public compiler preview. CI stages the rehearsal on loopback and discards it when the job ends. The fixed preview archive and GitHub Pages use their existing builds.
+The rehearsal accepts up to 8,192 UTF-16 code units of source and 4,096 of preset input. The compiler uses the same reference assemblies as the public compiler preview. The workflow verifies the rehearsal on loopback and uploads the tested directory as `trypane-editable-csharp-preview`. See the [hosting guide](runner-host/EDITABLE-PREVIEW.md) for the package, phone verification, and rollback.
 
 A hosted editable editor needs a separate, credential-free runner origin and review of the capabilities available to the loaded assembly. The signed-in Site bridge verifies fixed cases and is separate from that hosting decision.

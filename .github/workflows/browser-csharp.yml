@@ -6,6 +6,10 @@ on:
         description: Build and test the fixed execution preview package
         type: boolean
         default: false
+      editable_preview:
+        description: Build the editable C# hosting candidate
+        type: boolean
+        default: false
   pull_request:
     paths:
       - '.github/workflows/browser-csharp.yml'
@@ -19,6 +23,7 @@ jobs:
   compiler-check:
     env:
       EXECUTION_PREVIEW: ${{ github.event_name == 'pull_request' || inputs.execution_preview }}
+      EDITABLE_PREVIEW: ${{ github.event_name == 'pull_request' || inputs.editable_preview }}
     runs-on: ubuntu-latest
     timeout-minutes: 13
     steps:
@@ -35,6 +40,7 @@ jobs:
       - run: dotnet workload install wasm-tools --skip-manifest-update
         working-directory: prototype/browser-csharp
       - name: Build browser runtime
+        if: env.EXECUTION_PREVIEW == 'true' || env.EDITABLE_PREVIEW != 'true'
         working-directory: prototype/browser-csharp
         run: |
           probe=false
@@ -43,15 +49,19 @@ jobs:
           if [[ "$probe" == true ]]; then
             cp probe-worker.mjs ../../dist/compiler/wwwroot/
           fi
-      - name: Check browser C# in Chromium
+      - name: Install Chromium test dependencies
         run: |
           set -euo pipefail
           npm install --no-save --no-package-lock playwright@1.56.1
           if command -v google-chrome >/dev/null; then
-            export TRYPANE_CHROME_PATH=$(command -v google-chrome)
+            echo "TRYPANE_CHROME_PATH=$(command -v google-chrome)" >> "$GITHUB_ENV"
           else
             npx playwright install chromium --with-deps
           fi
+      - name: Check browser C# in Chromium
+        if: env.EXECUTION_PREVIEW == 'true' || env.EDITABLE_PREVIEW != 'true'
+        run: |
+          set -euo pipefail
           if [[ "$EXECUTION_PREVIEW" == true ]]; then
             bash prototype/browser-csharp/runner-host/tools-stage-preview.sh dist/execution-preview "$GITHUB_SHA"
             docker build -t trypane-runner-host:ci dist/execution-preview/runner
@@ -67,7 +77,7 @@ jobs:
           done
           node tests/browser/compiler-smoke.mjs http://127.0.0.1:8077/
       - uses: actions/upload-artifact@v4
-        if: env.EXECUTION_PREVIEW != 'true'
+        if: env.EXECUTION_PREVIEW != 'true' && env.EDITABLE_PREVIEW != 'true'
         with:
           name: trypane-browser-csharp-compiler
           path: |
@@ -85,15 +95,19 @@ jobs:
           name: trypane-fixed-execution-preview
           path: dist/execution-preview/
           if-no-files-found: error
-      - name: Rehearse editable snippets without publishing a runner
-        if: github.event_name == 'pull_request'
+      - name: Build and verify the editable hosting candidate
+        if: env.EDITABLE_PREVIEW == 'true'
         run: |
           set -euo pipefail
           dotnet publish prototype/browser-csharp/TryPane.Compiler.csproj -c Release -o dist/editable-compiler -p:EnableEditableRehearsal=true
           cp prototype/browser-csharp/editable-worker.mjs dist/editable-compiler/wwwroot/
           bash prototype/browser-csharp/runner-host/tools-stage-preview.sh dist/editable-rehearsal "$GITHUB_SHA" dist/editable-compiler editable
           docker build -t trypane-runner-host:ci dist/editable-rehearsal/runner
-          if command -v google-chrome >/dev/null; then
-            export TRYPANE_CHROME_PATH=$(command -v google-chrome)
-          fi
           TRYPANE_EDITABLE_REHEARSAL=1 node tests/browser/execution-probe.mjs
+      - uses: actions/upload-artifact@v4
+        if: env.EDITABLE_PREVIEW == 'true'
+        with:
+          name: trypane-editable-csharp-preview
+          path: dist/editable-rehearsal/
+          if-no-files-found: error
+          retention-days: 7
