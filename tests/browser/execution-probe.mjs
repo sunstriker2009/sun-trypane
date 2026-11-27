@@ -24,7 +24,7 @@ assert.ok(hostHtml.includes('__TRYPANE_RUNNER_FRAME_URL__'));
 let appRequests = 0;
 let frameUrl;
 const hostAssets = new Map([
-  ['/dist/demo/execution-probe.js', 'text/javascript'],
+  [editable ? '/dist/demo/editable-preview.js' : '/dist/demo/execution-probe.js', 'text/javascript'],
   ['/dist/src/pane.js', 'text/javascript'],
   ['/dist/src/runner.js', 'text/javascript'],
   ['/demo.css', 'text/css'],
@@ -86,65 +86,67 @@ async function checkLinearMemory() {
   assert.fail('The runtime did not declare its linear memory');
 }
 
-async function checkEditable(browser, runnerUrl, workerPolicy) {
-  const workerPath = runtimePath + 'editable-worker.mjs';
-  const headers = await fetch(runnerUrl + workerPath, { method: 'HEAD' });
-  assert.equal(headers.status, 200);
-  assert.equal(headers.headers.get('content-security-policy'), workerPolicy);
+async function checkEditable(page) {
+  const run = page.getByRole('button', { name: 'Run', exact: true });
+  const cancel = page.getByRole('button', { name: 'Cancel', exact: true });
+  const source = page.getByLabel('C# source');
+  const input = page.getByLabel('Preset input');
+  const status = page.getByRole('status');
+  const result = page.locator('.try-pane__result');
+  const stdout = result.locator('[data-stream="stdout"]');
+  const frame = page.locator('iframe[title="Isolated C# runner"]');
 
-  const page = await browser.newPage();
-  try {
-    // A runner-origin document lets the harness exercise the worker directly.
-    // This build has no app-to-runner message route for editable source.
-    await page.goto(runnerUrl);
-    const run = (source, input = '') => page.evaluate(({ workerPath, source, input }) =>
-      new Promise(resolve => {
-        const worker = new Worker(workerPath, { type: 'module' });
-        let deadline = setTimeout(() => finish({ kind: 'startup-timeout' }), 45_000);
+  await source.fill('Console.WriteLine(Console.ReadLine()?.ToUpperInvariant()); return 12;');
+  await input.fill('TryPane');
+  await run.click();
+  await status.getByText('Run complete', { exact: true }).waitFor({ timeout: 55_000 });
+  assert.match(await result.textContent(), /Exit code: 12/);
+  assert.equal(await stdout.textContent(), 'TRYPANE\n');
+  assert.equal(await frame.count(), 0);
 
-        function finish(outcome) {
-          clearTimeout(deadline);
-          worker.terminate();
-          resolve(outcome);
-        }
-        worker.onerror = () => finish({ kind: 'worker-error' });
-        worker.onmessage = ({ data }) => {
-          if (data.kind === 'ready') {
-            worker.postMessage({ source, input });
-          } else if (data.kind === 'entered') {
-            clearTimeout(deadline);
-            deadline = setTimeout(() => finish({ kind: 'timeout' }), 2000);
-          } else {
-            finish(data);
-          }
-        };
-      }), { workerPath, source, input });
+  await source.fill('Console.WriteLine(unknown);');
+  await run.click();
+  await status.getByText('Compilation failed', { exact: true }).waitFor();
+  assert.match(await result.textContent(), /Line 1: CS0103/);
+  assert.equal(await stdout.count(), 0);
+  assert.equal(await frame.count(), 0);
 
-    const first = await run('Console.WriteLine(Console.ReadLine()?.ToUpperInvariant()); return 12;', 'TryPane');
-    assert.equal(first.kind, 'result');
-    assert.equal(first.result.compilation.success, true);
-    assert.deepEqual(first.result.execution, { exitCode: 12, stdout: 'TRYPANE\n', stderr: '', truncated: false });
+  // Bypass the form's maxlength to verify the frame enforces the same limits.
+  await source.evaluate(field => { field.value = ' '.repeat(8193); });
+  await run.click();
+  await status.getByText('Run failed. Use at most 8,192 source and 4,096 input characters.', { exact: true }).waitFor();
+  await source.fill('Console.WriteLine(Console.ReadLine());');
+  await input.evaluate(field => { field.value = 'a'.repeat(4097); });
+  await run.click();
+  await status.getByText('Run failed. Use at most 8,192 source and 4,096 input characters.', { exact: true }).waitFor();
+  await input.fill('TryPane');
 
-    const invalid = await run('Console.WriteLine(unknown);');
-    assert.equal(invalid.kind, 'result');
-    assert.equal(invalid.result.compilation.success, false);
-    assert.equal(invalid.result.execution, null);
-    assert.ok(invalid.result.compilation.diagnostics.some(diagnostic => diagnostic.id === 'CS0103' && diagnostic.line === 1));
-    assert.equal((await run(' '.repeat(8193))).kind, 'error');
-    assert.equal((await run('Console.WriteLine(Console.ReadLine());', 'a'.repeat(4097))).kind, 'error');
+  await source.fill('throw new InvalidOperationException("test");');
+  await run.click();
+  await status.getByText('Execution failed', { exact: true }).waitFor();
+  assert.equal(await result.textContent(), 'The snippet threw an exception.');
 
-    const failure = await run('throw new InvalidOperationException("test");');
-    assert.equal(failure.kind, 'result');
-    assert.equal(failure.result.error, 'The snippet threw an exception.');
-    assert.equal((await run('while (true) { }')).kind, 'timeout');
+  await source.fill('while (true) { }');
+  await run.click();
+  await status.getByText('Run failed. Execution timed out.', { exact: true }).waitFor();
+  assert.equal(await frame.count(), 0);
 
-    const rerun = await run("Console.Write(new string('z', 5000));");
-    assert.equal(rerun.kind, 'result');
-    assert.deepEqual(rerun.result.execution, { exitCode: 0, stdout: 'z'.repeat(4096), stderr: '', truncated: true });
-    console.log('Editable C# rehearsal passed: source, preset input, diagnostics, limits, deadline and fresh rerun.');
-  } finally {
-    await page.close();
-  }
+  await run.click();
+  await page.getByText('Progress: Execution started.', { exact: true }).waitFor();
+  await cancel.click();
+  await status.getByText('Cancelled', { exact: true }).waitFor();
+  assert.equal(await frame.count(), 0);
+  assert.equal(await source.inputValue(), 'while (true) { }');
+  assert.equal(await input.inputValue(), 'TryPane');
+
+  await source.fill("Console.Write(new string('z', 5000));");
+  await run.click();
+  await status.getByText('Run complete', { exact: true }).waitFor();
+  assert.match(await result.textContent(), /Exit code: 0 · Output truncated/);
+  assert.equal(await stdout.textContent(), 'z'.repeat(4096));
+  assert.equal(await frame.count(), 0);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  console.log('Editable C# pane passed: source, preset input, diagnostics, bounds, deadline, cancellation, and rerun.');
 }
 
 const container = 'trypane-runner-host-' + randomUUID();
@@ -177,7 +179,9 @@ try {
   assert.equal(frameResponse.headers.get('content-security-policy'),
     `default-src 'none'; script-src 'self'; worker-src 'self'; frame-ancestors ${app.url}`);
   await frameResponse.text();
-  const workerUrl = runnerUrl + runtimePath + 'probe-worker.mjs';
+  const workerUrl = runnerUrl + runtimePath + (editable ? 'editable-worker.mjs' : 'probe-worker.mjs');
+  const otherWorker = editable ? 'probe-worker.mjs' : 'editable-worker.mjs';
+  assert.equal((await fetch(runnerUrl + runtimePath + otherWorker)).status, 404);
   const workerHeaders = await fetch(workerUrl, { method: 'HEAD' });
   assert.equal(workerHeaders.status, 200);
   assert.equal(workerHeaders.headers.get('content-type'), 'text/javascript');
@@ -192,8 +196,23 @@ try {
   browser = await chromium.launch(process.env.TRYPANE_CHROME_PATH
     ? { executablePath: process.env.TRYPANE_CHROME_PATH, args: ['--no-sandbox'] }
     : { args: ['--no-sandbox'] });
-  const page = await browser.newPage();
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await page.goto(app.url);
+  if (editable) {
+    await checkEditable(page);
+  } else {
+    await checkFixed(page);
+  }
+} finally {
+  await browser?.close();
+  try {
+    if (started) docker(['rm', '--force', container]);
+  } finally {
+    await new Promise(resolve => app.server.close(resolve));
+  }
+}
+
+async function checkFixed(page) {
   const runButton = page.getByRole('button', { name: 'Run', exact: true });
   const probe = page.getByLabel('Fixed probe');
   const status = page.getByRole('status');
@@ -252,17 +271,5 @@ try {
   assert.equal(await result.locator('[data-stream="stderr"]').textContent(), 'y'.repeat(4096));
   assert.equal(await runnerFrame.count(), 0);
   assert.equal(appRequests, 0, 'The runner worker must not reach the app origin');
-  if (editable) {
-    await checkEditable(browser, runnerUrl, workerPolicy);
-  } else {
-    assert.equal((await fetch(runnerUrl + runtimePath + 'editable-worker.mjs')).status, 404);
-  }
   console.log('Browser execution probe passed: origin separation, request blocking, stdout/stderr caps, timeout, cancellation, memory cap and rerun.');
-} finally {
-  await browser?.close();
-  try {
-    if (started) docker(['rm', '--force', container]);
-  } finally {
-    await new Promise(resolve => app.server.close(resolve));
-  }
 }
