@@ -23,8 +23,8 @@ The existing Pages build serves the compile-only checker. The fixed execution pa
 
 ## Private Sites bridge check
 
-The owner verified the fixed runner from its private Site page. The next check is whether a signed-in phone browser lets the public Pages demo reach that private Site in a frame.
+The owner verified the fixed runner from its private Site page and confirmed the deployed Pages bridge worked.
 
 Open the private Site directly and sign in first. Use the Pages bridge at `demo/runner-bridge.html` with a URL fragment of the form `#runner=https%3A%2F%2F<site-host>.chatgpt.site%2Fframe`. The page recognizes only HTTPS Sites frame URLs. Browsers omit the fragment from the HTTP request. Run the console example. Then start the long-running example, cancel it, and rerun the console example.
 
-Chromium CI checks the staged bridge against a simulated Sites frame. The separate NGINX rehearsal exercises the same channel with the real fixed runtime. Neither test establishes whether a signed-in phone allows session access in the embedded private Site. Record the result before considering public execution.
+Chromium CI checks the staged bridge against a simulated Sites frame. The separate NGINX rehearsal exercises the same channel with the real fixed runtime. The owner’s live check covers the signed-in bridge with the fixed runner. Editable execution is evaluated separately in CI.

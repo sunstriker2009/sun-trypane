@@ -13,14 +13,17 @@
     <PackageDownload Include="Microsoft.NETCore.App.Ref" Version="[$(ReferencePackVersion)]" />
     <CompilerReference Include="System.Runtime.dll;System.Console.dll;System.Linq.dll;System.Collections.dll" />
   </ItemGroup>
-  <ItemGroup Condition="'$(EnableExecutionProbe)' != 'true'">
+  <ItemGroup Condition="'$(EnableExecutionProbe)' != 'true' And '$(EnableEditableRehearsal)' != 'true'">
     <Compile Remove="ExecutionProbe.cs" />
   </ItemGroup>
-  <PropertyGroup Condition="'$(EnableExecutionProbe)' == 'true'">
+  <ItemGroup Condition="'$(EnableEditableRehearsal)' != 'true'">
+    <Compile Remove="EditableExecution.cs" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(EnableExecutionProbe)' == 'true' Or '$(EnableEditableRehearsal)' == 'true'">
     <WasmBuildNative>true</WasmBuildNative>
     <EmccMaximumHeapSize>268435456</EmccMaximumHeapSize>
   </PropertyGroup>
-  <ItemGroup Condition="'$(EnableExecutionProbe)' == 'true'">
+  <ItemGroup Condition="'$(EnableExecutionProbe)' == 'true' Or '$(EnableEditableRehearsal)' == 'true'">
     <!-- The fixed probe invokes these APIs from a dynamically emitted assembly. -->
     <TrimmerRootAssembly Include="System.Console;System.Linq" />
   </ItemGroup>
