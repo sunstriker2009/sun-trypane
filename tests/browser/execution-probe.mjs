@@ -18,6 +18,10 @@ async function listen(host, handler) {
 
 const editable = process.env.TRYPANE_EDITABLE_REHEARSAL === '1';
 const staging = resolve(editable ? 'dist/editable-rehearsal' : 'dist/execution-preview');
+const manifest = JSON.parse(await readFile(resolve(staging, 'manifest.json'), 'utf8'));
+assert.equal(manifest.variant, editable ? 'editable-csharp-rehearsal' : 'fixed-csharp-preview');
+assert.match(manifest.sourceCommit, /^[a-f0-9]{40}$/);
+if (process.env.GITHUB_SHA) assert.equal(manifest.sourceCommit, process.env.GITHUB_SHA);
 const hostRoot = resolve(staging, 'host');
 const hostHtml = await readFile(resolve(hostRoot, 'index.html'), 'utf8');
 assert.ok(hostHtml.includes('__TRYPANE_RUNNER_FRAME_URL__'));

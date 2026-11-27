@@ -19,6 +19,7 @@ case "$variant" in
     frame=frame
     worker=probe-worker
     manifest_variant=fixed-csharp-preview
+    guide=README.md
     ;;
   editable)
     page=editable-preview
@@ -26,6 +27,7 @@ case "$variant" in
     frame=editable-frame
     worker=editable-worker
     manifest_variant=editable-csharp-rehearsal
+    guide=EDITABLE-PREVIEW.md
     ;;
 esac
 cp -- "$host_dir/$page.html" "$output/host/index.html"
@@ -37,5 +39,5 @@ cp -- "$host_dir/$frame.mjs" "$output/runner/frame.mjs"
 cp -R -- "$runtime_dir/wwwroot" "$output/runner/runtime"
 test -s "$output/runner/runtime/$worker.mjs"
 test -s "$output/runner/runtime/_framework/dotnet.js"
-cp -- "$host_dir/README.md" "$output/README.md"
+cp -- "$host_dir/$guide" "$output/README.md"
 printf '{"sourceCommit":"%s","variant":"%s"}\n' "$source_commit" "$manifest_variant" > "$output/manifest.json"
