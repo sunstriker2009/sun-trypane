@@ -198,7 +198,19 @@ try {
   };
   await writeFile('dist/m2-browser-measurements.json', JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify(report));
-  if (siteRoot) await checkCompiler(browser, new URL("../", url).href);
+  if (siteRoot) {
+    const base = new URL("../", url).href;
+    const programmatic = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await programmatic.goto(base);
+    await programmatic.getByRole('link', { name: 'Programmatic Regex', exact: true }).click();
+    await programmatic.getByRole('status').getByText('Run complete.', { exact: true }).waitFor({ timeout: 45000 });
+    const result = JSON.parse(await programmatic.locator('#result').textContent());
+    assert.equal(result.status, 'match');
+    assert.deepEqual(result.matches.map(match => match.text), ['Tweak', 'Test', 'Repeat']);
+    assert.equal(await programmatic.locator('.try-pane').count(), 0);
+    await programmatic.close();
+    await checkCompiler(browser, base);
+  }
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));
