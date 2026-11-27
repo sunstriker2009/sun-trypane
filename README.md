@@ -17,7 +17,7 @@ TryPane is an embeddable **Try It** pane for testing code and inspecting results
 | Check editable C# and see compiler diagnostics | [C# compiler preview](https://sunstriker2009.github.io/sun-trypane/demo/csharp-check.html) | Browser, compilation only |
 | Start a run from host code without mounting a pane | [Programmatic Regex](https://sunstriker2009.github.io/sun-trypane/demo/programmatic.html) and [source](demo/programmatic.ts) | Browser |
 | Run editable C# through an editor or script | [Local C# editor and CLI](prototype/csharp/README.md) | Local Docker |
-| Run a Go console snippet from a script | [Local Go CLI](prototype/go/README.md) | Local Docker |
+| Run a Go console snippet through an editor or script | [Local Go editor and CLI](prototype/go/README.md) | Local Docker |
 | Verify the isolated browser runner | [Fixed C# execution probes](prototype/browser-csharp/runner-host/README.md) | GitHub Actions |
 
 The [demo site](https://sunstriker2009.github.io/sun-trypane/) groups the public examples. CI tests the staged site before publishing it to GitHub Pages.

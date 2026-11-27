@@ -30,3 +30,17 @@ The example prints `Hello, Ada!`. Pass a single `package main` source file using
 Use Ctrl+C to cancel. Compilation and execution share a 45-second deadline. Source and preset input are each capped at 32 KiB. Combined stdout and stderr are capped at 64 KiB. The container runs as a nonroot user with network disabled, temporary write space, and CPU, memory, and process limits. Use it for trusted local snippets.
 
 Run the smoke checks with `node --test prototype/go/smoke.mjs` after building the image.
+
+## Local browser editor
+
+Build the Docker image above, then run these commands from the repository root:
+
+```sh
+npm ci
+npm run build
+node prototype/go/serve.mjs
+```
+
+Open <http://127.0.0.1:8002/> on the same machine. Edit the Go source and optional standard input, then select **Run**. Output and diagnostics stream into the pane. Select a compiler location to jump to the source line. **Cancel** stops the run and leaves both fields and the output visible. Retry after the container finishes cleanup.
+
+The editor listens on IPv4 loopback and accepts one run at a time from its own origin. Closing the browser connection cancels an active run.
