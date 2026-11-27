@@ -9,25 +9,38 @@
   <body>
     <main>
       <h1>TryPane demos</h1>
-      <p>Run an example and inspect the result in your browser.</p>
+      <h2>Use TryPane controls</h2>
       <ul>
         <li>
           <a href="demo/regex.html">C# Regex</a>
           <p>Edit a .NET regex pattern and see highlights and captures in your test text.</p>
         </li>
         <li>
-          <a href="demo/csharp-check.html">C# compiler preview</a>
-          <p>Edit a C# snippet and check compilation in your browser. The preview shows diagnostics without executing the snippet.</p>
-        </li>
-        <li>
           <a href="demo/batch.html">Live batch output</a>
           <p>Watch progress and diagnostics as TryPane checks a batch of text.</p>
         </li>
+        <li>
+          <a href="demo/csharp-check.html">C# compiler preview</a>
+          <p>Edit a C# snippet and check compilation in your browser. The preview shows diagnostics without executing the snippet.</p>
+        </li>
       </ul>
-      <h2>Editable C# snippets</h2>
-      <p>Use the local Docker editor to write and run C# snippets with standard input and compiler diagnostics.
-        <a href="https://github.com/sunstriker2009/sun-trypane/tree/main/prototype/csharp#open-the-local-browser-editor">Local setup</a>
-      </p>
+      <h2>Start a run from code</h2>
+      <ul>
+        <li>
+          <a href="demo/programmatic.html">Programmatic Regex</a>
+          <p>Open the example to start a run automatically and inspect its structured result.</p>
+        </li>
+        <li>
+          <a href="https://github.com/sunstriker2009/sun-trypane/tree/main/prototype/csharp#run-an-editable-c-snippet-locally">Local C# command line</a>
+          <p>Call the Docker runner from a script and receive stdout, stderr and an exit code.</p>
+        </li>
+      </ul>
+      <h2>Run editable C# locally</h2>
+      <p><a href="https://github.com/sunstriker2009/sun-trypane/tree/main/prototype/csharp#open-the-local-browser-editor">Local C# editor</a>
+        runs trusted console snippets in Docker with preset standard input and compiler diagnostics.</p>
+      <h2>Inspect the isolated runner</h2>
+      <p><a href="https://github.com/sunstriker2009/sun-trypane/tree/main/prototype/browser-csharp/runner-host">Fixed C# execution probes</a>
+        test Run, Cancel and resource limits in GitHub Actions.</p>
     </main>
   </body>
 </html>
