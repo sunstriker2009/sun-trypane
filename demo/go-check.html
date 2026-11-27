@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Go source checker · TryPane</title>
+    <link rel="stylesheet" href="demo.css">
+    <script type="module" src="../dist/demo/go-check.js"></script>
+  </head>
+  <body>
+    <main>
+      <p><a href="../">TryPane demos</a></p>
+      <h1>Go source checker</h1>
+      <p>Check one Go file’s syntax and preview its formatting. For type checking and execution, use the <a href="https://github.com/sunstriker2009/sun-trypane/tree/main/prototype/go#local-browser-editor">local Go editor</a>.</p>
+      <label for="source">Go source</label>
+      <textarea id="source" rows="12" maxlength="8192" spellcheck="false">package main
+
+import "fmt"
+
+func main(){fmt.Println("Hello, Go!")}</textarea>
+      <div id="try-it"></div>
+    </main>
+  </body>
+</html>

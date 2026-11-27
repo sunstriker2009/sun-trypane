@@ -251,6 +251,7 @@ try {
     await bridge.close();
 
     await checkGoDemo(browser, base);
+    await checkGoSource(browser, base);
     await checkCompiler(browser, base);
   }
 } finally {
@@ -313,6 +314,42 @@ async function checkGoDemo(browser, base) {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   } finally {
     release.resolve();
+    await page.close();
+  }
+}
+
+async function checkGoSource(browser, base) {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  try {
+    await page.goto(base);
+    await page.getByRole('link', { name: 'Go source checker', exact: true }).click();
+    const check = page.getByRole('button', { name: 'Check', exact: true });
+    const status = page.getByRole('status');
+    const source = page.getByRole('textbox', { name: 'Go source' });
+    const result = page.locator('.try-pane__result');
+
+    await check.click();
+    await status.getByText('Syntax valid', { exact: true }).waitFor();
+    assert.match(await result.locator('pre').textContent(), /func main\(\) \{ fmt\.Println\("Hello, Go!"\) \}/);
+    assert.match(await source.inputValue(), /func main\(\)\{/);
+
+    await source.fill('package main\n//line other.go:99\nfunc main() { = }');
+    await check.click();
+    await status.getByText('Syntax errors found', { exact: true }).waitFor();
+    assert.match(await result.textContent(), /Line 3, byte column 15/);
+    assert.equal(await result.locator('pre').count(), 0);
+
+    // Undefined names are a type-checking concern and do not invalidate syntax.
+    await source.fill('package main\nfunc main() { missing() }');
+    await check.click();
+    await status.getByText('Syntax valid', { exact: true }).waitFor();
+    assert.match(await result.locator('pre').textContent(), /missing\(\)/);
+
+    await source.fill('é'.repeat(4097));
+    await check.click();
+    await status.getByText('Run failed. Use at most 8 KiB of Go source.', { exact: true }).waitFor();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  } finally {
     await page.close();
   }
 }
