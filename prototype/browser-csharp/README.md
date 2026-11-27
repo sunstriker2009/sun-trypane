@@ -26,8 +26,8 @@ The owner reported good perceived performance after trying the hosted compiler p
 
 The Browser C# compiler pull request workflow builds an optional execution probe and runs it in Chromium. It compiles built-in snippets and tests preset input, end of file, output, diagnostics, and exit code. The exported probe accepts a fixed case name. Both the probe assembly code and its worker are excluded from the public preview build.
 
-The Chromium harness puts the frame and worker on a separate loopback origin. It verifies that the frame cannot read the app DOM and that the worker's response policy blocks requests to the app. It also checks termination by Cancel or deadline, a fresh rerun, and a 4,096-character capture limit per console stream. The deadline starts at invocation and a separate timer covers startup.
+The Chromium harness serves the frame and worker from a separate loopback origin using the [runner host configuration](runner-host/). It verifies that the frame cannot read the app DOM and that the worker's response policy blocks requests to the app. It also checks termination by Cancel or deadline, a fresh rerun, and a 4,096-character capture limit per console stream. The deadline starts at invocation and a separate timer covers startup.
 
 The execution probe links a 256 MiB maximum into the WebAssembly module. CI checks the published binary and verifies that a fixed allocation case receives an out-of-memory error, followed by a successful run in a fresh worker. The cap applies to the module's linear memory. Browser engine memory, JavaScript allocations and worker overhead are outside that cap.
 
-These tests exercise known probes. Before enabling editable execution, choose a delivery origin that can serve the worker policy and validate the broader compatibility and resource behavior.
+These tests exercise known probes. The [hosting guide](runner-host/README.md) records the tested setup and what remains before any public execution deployment.

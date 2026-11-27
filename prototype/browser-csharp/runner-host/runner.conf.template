@@ -1,0 +1,32 @@
+server {
+    listen 8080;
+    server_name _;
+    root /srv/runner;
+    server_tokens off;
+    default_type application/octet-stream;
+
+    types {
+        text/html html;
+        text/javascript js mjs;
+        application/json json;
+        application/wasm wasm;
+    }
+
+    location = /frame {
+        add_header Content-Security-Policy "default-src 'none'; worker-src 'self'; frame-ancestors ${TRYPANE_APP_ORIGIN}" always;
+        add_header X-Content-Type-Options nosniff always;
+        limit_except GET { deny all; }
+        try_files /frame.html =404;
+    }
+
+    location ^~ /dist/compiler/wwwroot/ {
+        add_header Content-Security-Policy "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'none'" always;
+        add_header X-Content-Type-Options nosniff always;
+        limit_except GET { deny all; }
+        try_files $uri =404;
+    }
+
+    location / {
+        return 404;
+    }
+}

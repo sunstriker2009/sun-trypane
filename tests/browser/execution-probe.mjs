@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { createServer } from 'node:http';
-import { extname, resolve, sep } from 'node:path';
+import { resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
 import { chromium } from 'playwright';
 
 async function listen(host, handler) {
@@ -25,7 +28,6 @@ const app = await listen('127.0.0.1', (request, response) => {
 
 const runtimePath = '/dist/compiler/wwwroot/';
 const root = resolve('dist/compiler/wwwroot');
-const mime = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.wasm': 'application/wasm', '.json': 'application/json' };
 async function checkLinearMemory() {
   const framework = resolve(root, '_framework');
   const files = (await readdir(framework)).filter(name => /^dotnet\.native(?:\.[^.]+)?\.wasm$/.test(name));
@@ -57,50 +59,59 @@ async function checkLinearMemory() {
     assert.ok(initialPages > 0 && initialPages <= maximumPages);
     assert.equal(maximumPages, 4096, 'Expected a 256 MiB maximum');
     console.log(`Published WebAssembly memory: ${initialPages} initial pages, ${maximumPages} maximum pages.`);
-    return;
+    return files[0];
   }
   assert.fail('The runtime did not declare its linear memory');
 }
 
-const runner = await listen('127.0.0.2', async (request, response) => {
-  const path = new URL(request.url, 'http://localhost').pathname;
-  if (request.method === 'GET' && path === '/frame') {
-    response.writeHead(200, {
-      'Content-Type': 'text/html',
-      'Content-Security-Policy': `default-src 'none'; worker-src 'self'; frame-ancestors ${app.url}`,
-    }).end('<!doctype html><title>Execution probe frame</title>');
-    return;
-  }
-  if (request.method !== 'GET' || !path.startsWith(runtimePath)) {
-    response.writeHead(404).end();
-    return;
-  }
-  const file = resolve(root, path.slice(runtimePath.length));
-  if (!file.startsWith(root + sep)) {
-    response.writeHead(404).end();
-    return;
-  }
-  try {
-    const bytes = await readFile(file);
-    response.writeHead(200, {
-      'Content-Type': mime[extname(file)] ?? 'application/octet-stream',
-      'Content-Security-Policy': "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'none'",
-      'X-Content-Type-Options': 'nosniff',
-    }).end(bytes);
-  } catch {
-    response.writeHead(404).end();
-  }
-});
+const container = 'trypane-runner-host-' + randomUUID();
+function docker(args) {
+  return execFileSync('docker', args, { encoding: 'utf8', timeout: 20_000 }).trim();
+}
 
 let browser;
+let started = false;
 try {
-  await checkLinearMemory();
+  const wasm = await checkLinearMemory();
+  docker([
+    'run', '--detach', '--rm', '--name', container,
+    '--publish', '127.0.0.2::8080',
+    '--env', 'TRYPANE_APP_ORIGIN=' + app.url,
+    '--env', 'NGINX_ENVSUBST_FILTER=^TRYPANE_APP_ORIGIN$',
+    '--mount', `type=bind,source=${root},target=/srv/runner/dist/compiler/wwwroot,readonly`,
+    'trypane-runner-host:ci',
+  ]);
+  started = true;
+  const runnerUrl = 'http://' + docker(['port', container, '8080/tcp']);
+  assert.notEqual(new URL(runnerUrl).hostname, new URL(app.url).hostname);
+  const frameUrl = runnerUrl + '/frame';
+  let frameResponse;
+  for (let attempt = 0; attempt < 30; attempt++) {
+    frameResponse = await fetch(frameUrl).catch(() => undefined);
+    if (frameResponse?.ok) break;
+    await delay(200);
+  }
+  assert.equal(frameResponse?.status, 200, 'Runner host did not become ready');
+  assert.equal(frameResponse.headers.get('content-security-policy'),
+    `default-src 'none'; worker-src 'self'; frame-ancestors ${app.url}`);
+  await frameResponse.text();
+  const workerUrl = runnerUrl + runtimePath + 'probe-worker.mjs';
+  const workerHeaders = await fetch(workerUrl, { method: 'HEAD' });
+  assert.equal(workerHeaders.status, 200);
+  assert.equal(workerHeaders.headers.get('content-type'), 'text/javascript');
+  assert.equal(workerHeaders.headers.get('content-security-policy'),
+    "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'none'");
+  assert.equal(workerHeaders.headers.get('x-content-type-options'), 'nosniff');
+  const wasmHeaders = await fetch(runnerUrl + runtimePath + '_framework/' + wasm, { method: 'HEAD' });
+  assert.equal(wasmHeaders.status, 200);
+  assert.equal(wasmHeaders.headers.get('content-type'), 'application/wasm');
+  assert.equal((await fetch(runnerUrl + '/run', { method: 'HEAD' })).status, 404);
+  assert.equal((await fetch(workerUrl, { method: 'POST', body: 'test' })).status, 403);
   browser = await chromium.launch(process.env.TRYPANE_CHROME_PATH
     ? { executablePath: process.env.TRYPANE_CHROME_PATH, args: ['--no-sandbox'] }
     : { args: ['--no-sandbox'] });
   const page = await browser.newPage();
   await page.goto(app.url);
-  const frameUrl = runner.url + '/frame';
   const loaded = page.waitForEvent('framenavigated', frame => frame.url() === frameUrl);
   await page.evaluate(src => {
     const frame = document.createElement('iframe');
@@ -173,5 +184,9 @@ try {
   console.log('Browser execution probe passed: origin separation, request blocking, stdout/stderr caps, timeout, cancellation, memory cap and rerun.');
 } finally {
   await browser?.close();
-  await Promise.all([app.server, runner.server].map(server => new Promise(resolve => server.close(resolve))));
+  try {
+    if (started) docker(['rm', '--force', container]);
+  } finally {
+    await new Promise(resolve => app.server.close(resolve));
+  }
 }
