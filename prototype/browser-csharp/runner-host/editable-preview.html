@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="trypane-runner-frame" content="__TRYPANE_RUNNER_FRAME_URL__">
+    <title>TryPane editable C# rehearsal</title>
+    <link rel="stylesheet" href="demo.css">
+    <script type="module" src="dist/demo/editable-preview.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>Editable C# rehearsal</h1>
+      <p>Run a single C# console file with preset standard input.</p>
+      <label for="source">C# source</label>
+      <textarea id="source" rows="10" maxlength="8192" spellcheck="false">var name = Console.ReadLine();
+Console.WriteLine($"Hello, {name}.");</textarea>
+      <label for="input">Preset input</label>
+      <textarea id="input" rows="3" maxlength="4096" spellcheck="false">Ada</textarea>
+      <div id="try-it"></div>
+    </main>
+  </body>
+</html>

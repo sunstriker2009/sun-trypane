@@ -34,7 +34,7 @@ These tests exercise known probes. The [hosting guide](runner-host/README.md) re
 
 ## Editable execution rehearsal
 
-Pull request CI builds a separate runtime with `EnableEditableRehearsal=true`. Chromium passes one console source file and preset standard input to a fresh worker. The rehearsal checks changed source, compiler errors with line numbers, input and output bounds, an invocation deadline, and a successful run after terminating the previous worker.
+Pull request CI builds a separate runtime with `EnableEditableRehearsal=true`. The rehearsal page connects the editable source and preset input fields to TryPane. The page sends one run to the isolated frame using a fresh message port. The frame starts a disposable worker. Chromium checks edited source, compiler errors with line numbers, bounds, the deadline, cancellation with source and input preserved, and a successful rerun.
 
 The rehearsal accepts up to 8,192 UTF-16 code units of source and 4,096 of preset input. The compiler uses the same reference assemblies as the public compiler preview. CI stages the rehearsal on loopback and discards it when the job ends. The fixed preview archive and GitHub Pages use their existing builds.
 

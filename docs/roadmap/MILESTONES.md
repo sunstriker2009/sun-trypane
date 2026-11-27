@@ -28,6 +28,7 @@ Build the TryPane component and runner adapter in this repository, using [CodeFo
 | M15 · Fixed execution preview package | Produce separate deployable host and runner bundles from CI. | Test the exact packaged files on distinct origins and document HTTPS deployment and rollback. | Deployment candidate |
 | M16 · Private Sites bridge | Open the fixed private C# runner directly and connect to it from the opt-in Pages test. | From a signed-in phone browser, run the console case through Pages, cancel the long-running case, and rerun the console case. | Direct Site and embedded Pages bridge verified by the owner. |
 | M17 · Editable browser C# rehearsal | Compile and run one editable console file with preset input in a disposable WebAssembly worker. | In CI, verify changed source, compiler diagnostics, bounded output, deadline, and clean rerun. Review isolation before any hosted editor connects to it. | CI rehearsal |
+| M18 · Editable browser C# pane | Connect a source editor and standard input field to TryPane across separate browser origins. | In Chromium, verify Run, diagnostics, output bounds, deadline, cancellation with input preserved, and fresh rerun. | CI rehearsal |
 
 ## M1 verification
 

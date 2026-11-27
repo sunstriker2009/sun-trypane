@@ -12,6 +12,7 @@ on:
       - 'prototype/browser-csharp/**'
       - 'tests/browser/execution-probe.mjs'
       - 'demo/execution-probe.ts'
+      - 'demo/editable-preview.ts'
 permissions:
   contents: read
 jobs:
@@ -89,9 +90,8 @@ jobs:
         run: |
           set -euo pipefail
           dotnet publish prototype/browser-csharp/TryPane.Compiler.csproj -c Release -o dist/editable-compiler -p:EnableEditableRehearsal=true
-          cp prototype/browser-csharp/probe-worker.mjs dist/editable-compiler/wwwroot/
-          bash prototype/browser-csharp/runner-host/tools-stage-preview.sh dist/editable-rehearsal "$GITHUB_SHA" dist/editable-compiler
-          cp prototype/browser-csharp/editable-worker.mjs dist/editable-rehearsal/runner/runtime/
+          cp prototype/browser-csharp/editable-worker.mjs dist/editable-compiler/wwwroot/
+          bash prototype/browser-csharp/runner-host/tools-stage-preview.sh dist/editable-rehearsal "$GITHUB_SHA" dist/editable-compiler editable
           docker build -t trypane-runner-host:ci dist/editable-rehearsal/runner
           if command -v google-chrome >/dev/null; then
             export TRYPANE_CHROME_PATH=$(command -v google-chrome)
