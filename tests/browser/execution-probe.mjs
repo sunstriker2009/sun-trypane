@@ -17,13 +17,36 @@ async function listen(host, handler) {
 }
 
 let appRequests = 0;
-const app = await listen('127.0.0.1', (request, response) => {
+let frameUrl;
+const appScripts = new Set(['/dist/demo/execution-probe.js', '/dist/src/pane.js', '/dist/src/runner.js']);
+const app = await listen('127.0.0.1', async (request, response) => {
   if (request.url === '/boundary-probe') {
     appRequests++;
     response.writeHead(200, { 'Access-Control-Allow-Origin': '*' }).end('test marker');
     return;
   }
-  response.writeHead(200, { 'Content-Type': 'text/html' }).end('<!doctype html><title>Execution probe host</title>');
+  if (request.method === 'GET' && appScripts.has(request.url)) {
+    const source = await readFile('.' + request.url);
+    response.writeHead(200, { 'Content-Type': 'text/javascript' }).end(source);
+    return;
+  }
+  if (request.method !== 'GET' || request.url !== '/') {
+    response.writeHead(404).end();
+    return;
+  }
+  response.writeHead(200, { 'Content-Type': 'text/html' }).end(`<!doctype html>
+    <meta name="trypane-runner-frame" content="${frameUrl}">
+    <title>Execution probe host</title>
+    <label for="probe">Fixed probe</label>
+    <select id="probe">
+      <option value="console">Console</option>
+      <option value="timeout">Timeout</option>
+      <option value="cancel">Cancel</option>
+      <option value="memory">Memory</option>
+      <option value="output">Output</option>
+    </select>
+    <div id="try-it"></div>
+    <script type="module" src="/dist/demo/execution-probe.js"></script>`);
 });
 
 const runtimePath = '/dist/compiler/wwwroot/';
@@ -84,7 +107,7 @@ try {
   started = true;
   const runnerUrl = 'http://' + docker(['port', container, '8080/tcp']);
   assert.notEqual(new URL(runnerUrl).hostname, new URL(app.url).hostname);
-  const frameUrl = runnerUrl + '/frame';
+  frameUrl = runnerUrl + '/frame';
   let frameResponse;
   for (let attempt = 0; attempt < 30; attempt++) {
     frameResponse = await fetch(frameUrl).catch(() => undefined);
@@ -93,7 +116,7 @@ try {
   }
   assert.equal(frameResponse?.status, 200, 'Runner host did not become ready');
   assert.equal(frameResponse.headers.get('content-security-policy'),
-    `default-src 'none'; worker-src 'self'; frame-ancestors ${app.url}`);
+    `default-src 'none'; script-src 'self'; worker-src 'self'; frame-ancestors ${app.url}`);
   await frameResponse.text();
   const workerUrl = runnerUrl + runtimePath + 'probe-worker.mjs';
   const workerHeaders = await fetch(workerUrl, { method: 'HEAD' });
@@ -112,13 +135,22 @@ try {
     : { args: ['--no-sandbox'] });
   const page = await browser.newPage();
   await page.goto(app.url);
+  const runButton = page.getByRole('button', { name: 'Run', exact: true });
+  const probe = page.getByLabel('Fixed probe');
+  const status = page.getByRole('status');
+  const result = page.locator('.try-pane__result');
+  const runnerFrame = page.locator('iframe[title="Isolated C# runner"]');
+  page.on('console', message => {
+    if (message.type() === 'error') console.error(message.text());
+  });
+
+  async function run(name) {
+    await probe.selectOption(name);
+    await runButton.click();
+  }
+
   const loaded = page.waitForEvent('framenavigated', frame => frame.url() === frameUrl);
-  await page.evaluate(src => {
-    const frame = document.createElement('iframe');
-    frame.sandbox.add('allow-scripts', 'allow-same-origin');
-    frame.src = src;
-    document.body.append(frame);
-  }, frameUrl);
+  await run('console');
   const frame = await loaded;
   assert.equal(await frame.evaluate(() => {
     try {
@@ -127,59 +159,39 @@ try {
       return error.name;
     }
   }), 'SecurityError');
+  await status.getByText('Run complete', { exact: true }).waitFor();
+  assert.match(await result.textContent(), /Exit code: 7/);
+  assert.equal(await result.locator('[data-stream="stdout"]').textContent(), 'Hello, Ada. Sum: 15.\n');
+  assert.equal(await result.locator('[data-stream="stderr"]').textContent(), 'Probe diagnostic.\n');
+  assert.equal(await runnerFrame.count(), 0);
 
-  const run = (scenario, deadlineMs) => frame.evaluate(({ workerPath, scenario, boundaryUrl, deadlineMs }) => {
-    window.probeEntered = false;
-    return new Promise((resolve, reject) => {
-      const worker = new Worker(workerPath, { type: 'module' });
-      const startup = setTimeout(() => finish(() => reject(new Error('Probe startup timed out.'))), 45_000);
-      let deadline;
-      let blocked;
-      function finish(complete) {
-        clearTimeout(startup);
-        clearTimeout(deadline);
-        worker.terminate();
-        window.cancelProbe = undefined;
-        complete();
-      }
-      window.cancelProbe = () => finish(() => resolve({ outcome: 'cancelled', blocked }));
-      worker.onmessage = ({ data }) => {
-        if (data.ready) worker.postMessage({ scenario, boundaryUrl });
-        else if ('blocked' in data) blocked = data.blocked;
-        else if (data.entered) {
-          clearTimeout(startup);
-          window.probeEntered = true;
-          deadline = setTimeout(() => finish(() => resolve({ outcome: 'timeout', blocked })), deadlineMs);
-        } else if (data.error) finish(() => reject(new Error(data.error)));
-        else finish(() => resolve({ outcome: 'completed', blocked, result: data.result }));
-      };
-      worker.onerror = error => finish(() => reject(new Error(error.message || 'Could not start the probe worker.')));
-    });
-  }, { workerPath: runtimePath + 'probe-worker.mjs', scenario, deadlineMs, boundaryUrl: app.url + '/boundary-probe' });
+  await run('timeout');
+  await status.getByText('Run failed. Execution timed out.', { exact: true }).waitFor();
+  assert.equal(await runnerFrame.count(), 0);
 
-  assert.deepEqual(await run('console', 2000), {
-    outcome: 'completed',
-    blocked: true,
-    result: { exitCode: 7, stdout: 'Hello, Ada. Sum: 15.\n', stderr: 'Probe diagnostic.\n', truncated: false },
-  });
-  assert.deepEqual(await run('loop', 250), { outcome: 'timeout', blocked: true });
+  await run('cancel');
+  await page.getByText('Progress: Execution started.', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await status.getByText('Cancelled', { exact: true }).waitFor();
+  assert.equal(await runnerFrame.count(), 0);
+  assert.equal(await result.textContent(), '');
 
-  const active = run('loop', 10000);
-  await frame.waitForFunction(() => window.probeEntered, null, { timeout: 45_000 });
-  await frame.evaluate(() => window.cancelProbe());
-  assert.deepEqual(await active, { outcome: 'cancelled', blocked: true });
+  await run('memory');
+  // Window messages, including late results, cannot enter the private channel.
+  await page.evaluate(() => window.postMessage({
+    kind: 'result', blocked: true,
+    result: { exitCode: 99, stdout: 'Stale result', stderr: '', truncated: false },
+  }, location.origin));
+  await status.getByText('Run complete', { exact: true }).waitFor();
+  assert.match(await result.textContent(), /Exit code: 8/);
+  assert.equal(await result.locator('[data-stream="stdout"]').textContent(), 'Allocation stopped at the memory limit.\n');
 
-  assert.deepEqual(await run('memory', 8000), {
-    outcome: 'completed',
-    blocked: true,
-    result: { exitCode: 8, stdout: 'Allocation stopped at the memory limit.\n', stderr: '', truncated: false },
-  });
-
-  assert.deepEqual(await run('output', 2000), {
-    outcome: 'completed',
-    blocked: true,
-    result: { exitCode: 0, stdout: 'x'.repeat(4096), stderr: 'y'.repeat(4096), truncated: true },
-  });
+  await run('output');
+  await status.getByText('Run complete', { exact: true }).waitFor();
+  assert.match(await result.textContent(), /Exit code: 0 · Output truncated\./);
+  assert.equal(await result.locator('[data-stream="stdout"]').textContent(), 'x'.repeat(4096));
+  assert.equal(await result.locator('[data-stream="stderr"]').textContent(), 'y'.repeat(4096));
+  assert.equal(await runnerFrame.count(), 0);
   assert.equal(appRequests, 0, 'The runner worker must not reach the app origin');
   console.log('Browser execution probe passed: origin separation, request blocking, stdout/stderr caps, timeout, cancellation, memory cap and rerun.');
 } finally {

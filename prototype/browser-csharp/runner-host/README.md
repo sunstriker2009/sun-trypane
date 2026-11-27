@@ -9,6 +9,6 @@ The workflow builds the compiler with `EnableExecutionProbe=true` and copies the
 - Serve a dedicated HTTPS origin with a separate hostname from the app. The runner origin should carry no user sessions, credentials, APIs or uploads.
 - Preserve the worker's HTTP Content Security Policy and JavaScript and WebAssembly MIME types through any reverse proxy. Bind the embedding policy to the intended app origin.
 - Verify the same tests against the final origin and a supported phone browser. The loopback rehearsal does not measure browser compatibility on a deployed host.
-- Use a reviewed message channel for start, cancel and results before allowing editor source to reach a worker. The current test drives the isolated frame with Chromium automation.
+- Review the message channel before allowing source to reach a worker. The existing channel accepts only fixed case names. The app transfers a private port to the configured runner origin, and the frame verifies the app origin and parent window. Every run creates a fresh frame and port. Cancel and completion remove both.
 
 The public TryPane Pages site serves the compile-only checker. This repository does not deploy the runner host publicly.
