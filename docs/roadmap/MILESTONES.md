@@ -25,6 +25,7 @@ Build the TryPane component and runner adapter in this repository, using [CodeFo
 | M12 · Browser linear memory cap | Limit the probe runtime’s WebAssembly linear memory to 256 MiB. | Inspect the published maximum, trigger an allocation failure with a fixed snippet, and verify a fresh run. | CI probe |
 | M13 · Runner host verification | Test the fixed execution worker behind a separate static NGINX origin. | Verify response headers and MIME types, reject writes, and rerun the Chromium isolation, limit and recovery probes. | CI deployment rehearsal |
 | M14 · Runner message channel | Connect TryPane controls to the isolated host with a private port per fixed probe. | Verify origin checks, start, cancel, timeout, results and rejection of window messages in Chromium. | CI demo |
+| M15 · Fixed execution preview package | Produce separate deployable host and runner bundles from CI. | Test the exact packaged files on distinct origins and document HTTPS deployment and rollback. | Deployment candidate |
 
 ## M1 verification
 

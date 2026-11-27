@@ -16,41 +16,39 @@ async function listen(host, handler) {
   return { server, url: 'http://' + host + ':' + server.address().port };
 }
 
+const staging = resolve('dist/execution-preview');
+const hostRoot = resolve(staging, 'host');
+const hostHtml = await readFile(resolve(hostRoot, 'index.html'), 'utf8');
+assert.ok(hostHtml.includes('__TRYPANE_RUNNER_FRAME_URL__'));
 let appRequests = 0;
 let frameUrl;
-const appScripts = new Set(['/dist/demo/execution-probe.js', '/dist/src/pane.js', '/dist/src/runner.js']);
+const hostAssets = new Map([
+  ['/dist/demo/execution-probe.js', 'text/javascript'],
+  ['/dist/src/pane.js', 'text/javascript'],
+  ['/dist/src/runner.js', 'text/javascript'],
+  ['/demo.css', 'text/css'],
+]);
 const app = await listen('127.0.0.1', async (request, response) => {
   if (request.url === '/boundary-probe') {
     appRequests++;
     response.writeHead(200, { 'Access-Control-Allow-Origin': '*' }).end('test marker');
     return;
   }
-  if (request.method === 'GET' && appScripts.has(request.url)) {
-    const source = await readFile('.' + request.url);
-    response.writeHead(200, { 'Content-Type': 'text/javascript' }).end(source);
+  if (request.method === 'GET' && hostAssets.has(request.url)) {
+    const source = await readFile(resolve(hostRoot, '.' + request.url));
+    response.writeHead(200, { 'Content-Type': hostAssets.get(request.url) }).end(source);
     return;
   }
   if (request.method !== 'GET' || request.url !== '/') {
     response.writeHead(404).end();
     return;
   }
-  response.writeHead(200, { 'Content-Type': 'text/html' }).end(`<!doctype html>
-    <meta name="trypane-runner-frame" content="${frameUrl}">
-    <title>Execution probe host</title>
-    <label for="probe">Fixed probe</label>
-    <select id="probe">
-      <option value="console">Console</option>
-      <option value="timeout">Timeout</option>
-      <option value="cancel">Cancel</option>
-      <option value="memory">Memory</option>
-      <option value="output">Output</option>
-    </select>
-    <div id="try-it"></div>
-    <script type="module" src="/dist/demo/execution-probe.js"></script>`);
+  const html = hostHtml.replace('__TRYPANE_RUNNER_FRAME_URL__', frameUrl);
+  response.writeHead(200, { 'Content-Type': 'text/html' }).end(html);
 });
 
 const runtimePath = '/dist/compiler/wwwroot/';
-const root = resolve('dist/compiler/wwwroot');
+const root = resolve(staging, 'runner/runtime');
 async function checkLinearMemory() {
   const framework = resolve(root, '_framework');
   const files = (await readdir(framework)).filter(name => /^dotnet\.native(?:\.[^.]+)?\.wasm$/.test(name));
@@ -101,7 +99,6 @@ try {
     '--publish', '127.0.0.2::8080',
     '--env', 'TRYPANE_APP_ORIGIN=' + app.url,
     '--env', 'NGINX_ENVSUBST_FILTER=^TRYPANE_APP_ORIGIN$',
-    '--mount', `type=bind,source=${root},target=/srv/runner/dist/compiler/wwwroot,readonly`,
     'trypane-runner-host:ci',
   ]);
   started = true;

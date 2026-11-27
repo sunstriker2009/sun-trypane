@@ -1,6 +1,11 @@
 name: Browser C# compiler
 on:
   workflow_dispatch:
+    inputs:
+      execution_preview:
+        description: Build and test the fixed execution preview package
+        type: boolean
+        default: false
   pull_request:
     paths:
       - '.github/workflows/browser-csharp.yml'
@@ -10,6 +15,8 @@ permissions:
   contents: read
 jobs:
   compiler-check:
+    env:
+      EXECUTION_PREVIEW: ${{ github.event_name == 'pull_request' || inputs.execution_preview }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -29,7 +36,7 @@ jobs:
         working-directory: prototype/browser-csharp
         run: |
           probe=false
-          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then probe=true; fi
+          if [[ "$EXECUTION_PREVIEW" == true ]]; then probe=true; fi
           dotnet publish TryPane.Compiler.csproj -c Release -o ../../dist/compiler -p:EnableExecutionProbe="$probe"
           if [[ "$probe" == true ]]; then
             cp probe-worker.mjs ../../dist/compiler/wwwroot/
@@ -43,8 +50,9 @@ jobs:
           else
             npx playwright install chromium --with-deps
           fi
-          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
-            docker build -t trypane-runner-host:ci prototype/browser-csharp/runner-host
+          if [[ "$EXECUTION_PREVIEW" == true ]]; then
+            bash prototype/browser-csharp/runner-host/tools-stage-preview.sh dist/execution-preview "$GITHUB_SHA"
+            docker build -t trypane-runner-host:ci dist/execution-preview/runner
             node tests/browser/execution-probe.mjs
             exit
           fi
@@ -57,7 +65,7 @@ jobs:
           done
           node tests/browser/compiler-smoke.mjs http://127.0.0.1:8077/
       - uses: actions/upload-artifact@v4
-        if: github.event_name == 'workflow_dispatch'
+        if: env.EXECUTION_PREVIEW != 'true'
         with:
           name: trypane-browser-csharp-compiler
           path: |
@@ -68,4 +76,10 @@ jobs:
             dist/src/runner.js
             dist/compiler/wwwroot/
             dist/compiler-measurements.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: env.EXECUTION_PREVIEW == 'true'
+        with:
+          name: trypane-fixed-execution-preview
+          path: dist/execution-preview/
           if-no-files-found: error
