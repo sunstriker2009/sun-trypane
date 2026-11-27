@@ -4,6 +4,8 @@ on:
     paths:
       - '.github/workflows/csharp-prototype.yml'
       - 'prototype/csharp/**'
+      - 'prototype/container-runner.mjs'
+      - 'prototype/snippet-limits.mjs'
       - 'src/**'
       - 'tsconfig.json'
       - 'demo/demo.css'

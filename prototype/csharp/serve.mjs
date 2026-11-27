@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { maxSourceBytes, maxStdinBytes } from './limits.mjs';
+import { maxSourceBytes, maxStdinBytes } from '../snippet-limits.mjs';
 
 const host = '127.0.0.1';
 const port = Number(process.argv[2] ?? 8001);

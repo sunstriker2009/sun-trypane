@@ -30,6 +30,11 @@ Build the TryPane component and runner adapter in this repository, using [CodeFo
 | M17 · Editable browser C# rehearsal | Compile and run one editable console file with preset input in a disposable WebAssembly worker. | In CI, verify changed source, compiler diagnostics, bounded output, deadline, and clean rerun. Review isolation before any hosted editor connects to it. | CI rehearsal |
 | M18 · Editable browser C# pane | Connect a source editor and standard input field to TryPane across separate browser origins. | In Chromium, verify Run, diagnostics, output bounds, deadline, cancellation with input preserved, and fresh rerun. | CI rehearsal |
 | M19 · Editable C# hosting candidate | Package the editable pane and isolated runner from the exact two-origin CI rehearsal. | Produce a downloadable, commit-identified candidate. Document the credential-free HTTPS setup, phone check, and rollback. | Hosting candidate. Live verification pending. |
+| M20 · Local Go runner | Compile and run one Go console file with optional preset input using the shared Docker runner. | Verify compilation, diagnostics, stdout, stderr, exit code, cancellation, and output bounds. | Local CLI prototype |
+
+## C# runner closeout
+
+The local C# CLI and editor, public browser compiler, signed-in fixed-runner bridge, and isolated editable browser rehearsal are complete. The [editable hosting candidate](../../prototype/browser-csharp/runner-host/EDITABLE-PREVIEW.md) is available through GitHub Actions. Live editable execution and phone acceptance are deferred pending a separate credential-free HTTPS runner origin. Go is the next active runner.
 
 ## M1 verification
 
