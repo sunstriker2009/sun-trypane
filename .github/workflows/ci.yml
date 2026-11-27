@@ -41,6 +41,12 @@ jobs:
         run: bash tools-package-preview.sh "${{ github.sha }}"
       - name: Build the browser C# compiler
         run: dotnet publish prototype/browser-csharp/TryPane.Compiler.csproj -c Release -o "$RUNNER_TEMP/trypane-compiler"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache: false
+      - name: Build the browser Go demo
+        run: bash prototype/browser-go/build.sh
       - name: Stage the public demo site
         run: bash tools-stage-site.sh "$RUNNER_TEMP/trypane-pages" "$RUNNER_TEMP/trypane-compiler"
       - name: Check the public demos in Chromium
