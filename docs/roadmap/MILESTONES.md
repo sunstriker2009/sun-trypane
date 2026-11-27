@@ -35,6 +35,7 @@ Use the [runner playbook](../operations/RUNNER-PLAYBOOK.md) to plan and verify s
 | M20 · Local Go runner | Compile and run one Go console file with optional preset input using the shared Docker runner. | Verify compilation, diagnostics, stdout, stderr, exit code, cancellation, and output bounds. | Local CLI prototype |
 | M21 · Local Go editor | Connect TryPane to the local Go runner with source and preset input fields. | In Chromium, verify streamed output, compiler location jumps, one active run, cancellation with input preserved, and rerun. | Local browser prototype |
 | M22 · Browser Go execution | Run a precompiled Go JSON compactor in a WebAssembly worker on the public demo site. | On the staged site in Chromium, verify valid and invalid JSON, cancellation with input intact, and a fresh rerun. | Fixed Go browser demo |
+| M23 · Browser Go syntax checker | Parse and format one editable Go file using the standard library in a browser worker. | Verify valid and invalid syntax, physical line diagnostics, bounded input, and formatted output. Type checking and execution use the local Go runner. | Static browser demo |
 
 ## C# runner closeout
 
