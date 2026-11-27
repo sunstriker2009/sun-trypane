@@ -250,9 +250,69 @@ try {
     assert.equal(await bridge.locator('iframe').count(), 0);
     await bridge.close();
 
+    await checkGoDemo(browser, base);
     await checkCompiler(browser, base);
   }
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));
+}
+
+async function checkGoDemo(browser, base) {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const wasmUrl = new URL('dist/browser-go/json-compact.wasm', base).href;
+  let wasmRequests = 0;
+  page.on('request', request => {
+    if (request.url() === wasmUrl) wasmRequests++;
+  });
+  const waiting = Promise.withResolvers();
+  const release = Promise.withResolvers();
+  const delayWasm = async route => {
+    waiting.resolve();
+    await release.promise;
+    await route.abort().catch(() => {});
+  };
+
+  try {
+    await page.goto(base);
+    await page.getByRole('link', { name: 'Go JSON compactor', exact: true }).click();
+    const run = page.getByRole('button', { name: 'Run', exact: true });
+    const status = page.getByRole('status');
+    const source = page.getByRole('textbox', { name: 'JSON input' });
+    const result = page.locator('.try-pane__result');
+    const original = await source.inputValue();
+    assert.equal(wasmRequests, 0, 'Opening the demo must not load WebAssembly');
+
+    await page.route(wasmUrl, delayWasm);
+    await run.click();
+    await Promise.race([
+      waiting.promise,
+      status.getByText('Run failed', { exact: false }).waitFor().then(async () => {
+        throw new Error(await status.textContent());
+      }),
+    ]);
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await status.getByText('Cancelled', { exact: true }).waitFor();
+    assert.equal(await source.inputValue(), original);
+    release.resolve();
+    await page.unroute(wasmUrl, delayWasm);
+
+    await source.fill('{ "message": "東京", "values": [1, 2] }');
+    await run.click();
+    await status.getByText('JSON compacted', { exact: true }).waitFor();
+    assert.equal(await result.locator('pre').textContent(), '{"message":"東京","values":[1,2]}');
+
+    await source.fill('{"key": }');
+    await run.click();
+    await status.getByText('Invalid JSON', { exact: true }).waitFor();
+    assert.match(await result.textContent(), /invalid character/);
+
+    await source.fill('é'.repeat(16385));
+    await run.click();
+    await status.getByText('Run failed. Use at most 32 KiB of JSON.', { exact: true }).waitFor();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  } finally {
+    release.resolve();
+    await page.close();
+  }
 }

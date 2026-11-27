@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Go JSON compactor · TryPane</title>
+    <link rel="stylesheet" href="demo.css">
+    <script type="module" src="../dist/demo/go-json.js"></script>
+  </head>
+  <body>
+    <main>
+      <p><a href="../">TryPane demos</a></p>
+      <h1>Go JSON compactor</h1>
+      <p>Run Go’s JSON compactor in your browser. It validates JSON and removes unnecessary whitespace.</p>
+      <label for="json">JSON input</label>
+      <textarea id="json" rows="10" maxlength="32768" spellcheck="false">{
+  "name": "TryPane",
+  "languages": ["C#", "Go"]
+}</textarea>
+      <div id="try-it"></div>
+    </main>
+  </body>
+</html>

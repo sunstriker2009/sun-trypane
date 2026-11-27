@@ -32,6 +32,7 @@ Build the TryPane component and runner adapter in this repository, using [CodeFo
 | M19 · Editable C# hosting candidate | Package the editable pane and isolated runner from the exact two-origin CI rehearsal. | Produce a downloadable, commit-identified candidate. Document the credential-free HTTPS setup, phone check, and rollback. | Hosting candidate. Live verification pending. |
 | M20 · Local Go runner | Compile and run one Go console file with optional preset input using the shared Docker runner. | Verify compilation, diagnostics, stdout, stderr, exit code, cancellation, and output bounds. | Local CLI prototype |
 | M21 · Local Go editor | Connect TryPane to the local Go runner with source and preset input fields. | In Chromium, verify streamed output, compiler location jumps, one active run, cancellation with input preserved, and rerun. | Local browser prototype |
+| M22 · Browser Go execution | Run a precompiled Go JSON compactor in a WebAssembly worker on the public demo site. | On the staged site in Chromium, verify valid and invalid JSON, cancellation with input intact, and a fresh rerun. | Fixed Go browser demo |
 
 ## C# runner closeout
 
