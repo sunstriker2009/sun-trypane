@@ -209,6 +209,47 @@ try {
     assert.deepEqual(result.matches.map(match => match.text), ['Tweak', 'Test', 'Repeat']);
     assert.equal(await programmatic.locator('.try-pane').count(), 0);
     await programmatic.close();
+    const bridge = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    const bridgeUrl = new URL('demo/runner-bridge.html', base);
+    const bridgeRun = bridge.getByRole('button', { name: 'Run', exact: true });
+    await bridge.goto(bridgeUrl.href);
+    await bridge.getByRole('status').getByText('Open this page with a private runner link.').waitFor();
+    assert.equal(await bridgeRun.count(), 0);
+
+    bridgeUrl.hash = new URLSearchParams({ runner: 'https://wrong.example/frame' }).toString();
+    await bridge.goto(bridgeUrl.href);
+    await bridge.reload();
+    await bridge.getByRole('status').getByText('Open this page with a private runner link.').waitFor();
+    assert.equal(await bridgeRun.count(), 0);
+
+    const frameUrl = 'https://runner-test.chatgpt.site/frame';
+    await bridge.route(frameUrl, route => route.fulfill({
+      contentType: 'text/html',
+      body: `<script>
+        addEventListener('message', event => {
+          if (event.source !== parent || event.origin !== ${JSON.stringify(bridgeUrl.origin)} ||
+              event.data?.type !== 'trypane-probe-v1' || event.data.caseName !== 'console' ||
+              event.ports.length !== 1) return;
+          event.ports[0].postMessage({
+            kind: 'result',
+            blocked: true,
+            result: { exitCode: 7, stdout: 'Bridge connected.', stderr: '', truncated: false },
+          });
+        });
+      </script>`,
+    }));
+    bridgeUrl.hash = new URLSearchParams({ runner: frameUrl }).toString();
+    await bridge.goto(bridgeUrl.href);
+    await bridge.reload();
+    const signIn = bridge.getByRole('link', { name: 'Open the private runner and sign in' });
+    assert.equal(new URL(await signIn.getAttribute('href')).origin, new URL(frameUrl).origin);
+    assert.equal(await bridge.locator('iframe').count(), 0);
+    await bridgeRun.click();
+    await bridge.getByRole('status').getByText('Run complete', { exact: true }).waitFor({ timeout: 15000 });
+    assert.equal(await bridge.locator('[data-stream="stdout"]').textContent(), 'Bridge connected.');
+    assert.equal(await bridge.locator('iframe').count(), 0);
+    await bridge.close();
+
     await checkCompiler(browser, base);
   }
 } finally {

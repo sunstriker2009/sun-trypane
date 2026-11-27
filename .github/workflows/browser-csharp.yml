@@ -11,6 +11,7 @@ on:
       - '.github/workflows/browser-csharp.yml'
       - 'prototype/browser-csharp/**'
       - 'tests/browser/execution-probe.mjs'
+      - 'demo/execution-probe.ts'
 permissions:
   contents: read
 jobs:
