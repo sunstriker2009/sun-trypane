@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="trypane-runner-frame" content="__TRYPANE_RUNNER_FRAME_URL__">
+    <title>TryPane fixed C# execution preview</title>
+    <link rel="stylesheet" href="demo.css">
+    <script type="module" src="dist/demo/execution-probe.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>Fixed C# execution preview</h1>
+      <p>Run a built-in C# example in your browser. The long-running example lets you try Cancel.</p>
+      <label for="probe">Fixed probe</label>
+      <select id="probe">
+        <option value="console">Console output</option>
+        <option value="cancel">Long-running example</option>
+        <option value="timeout">Short deadline</option>
+        <option value="memory">Memory limit</option>
+        <option value="output">Output limit</option>
+      </select>
+      <div id="try-it"></div>
+    </main>
+  </body>
+</html>
