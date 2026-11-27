@@ -31,3 +31,11 @@ The Chromium harness serves the frame and worker from a separate loopback origin
 The execution probe links a 256 MiB maximum into the WebAssembly module. CI checks the published binary and verifies that a fixed allocation case receives an out-of-memory error, followed by a successful run in a fresh worker. The cap applies to the module's linear memory. Browser engine memory, JavaScript allocations and worker overhead are outside that cap.
 
 These tests exercise known probes. The [hosting guide](runner-host/README.md) records the tested setup and what remains before any public execution deployment.
+
+## Editable execution rehearsal
+
+Pull request CI builds a separate runtime with `EnableEditableRehearsal=true`. Chromium passes one console source file and preset standard input to a fresh worker. The rehearsal checks changed source, compiler errors with line numbers, input and output bounds, an invocation deadline, and a successful run after terminating the previous worker.
+
+The rehearsal accepts up to 8,192 UTF-16 code units of source and 4,096 of preset input. The compiler uses the same reference assemblies as the public compiler preview. CI stages the rehearsal on loopback and discards it when the job ends. The fixed preview archive and GitHub Pages use their existing builds.
+
+A hosted editable editor needs a separate, credential-free runner origin and review of the capabilities available to the loaded assembly. The signed-in Site bridge verifies fixed cases and is separate from that hosting decision.

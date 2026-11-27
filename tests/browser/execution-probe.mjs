@@ -16,7 +16,8 @@ async function listen(host, handler) {
   return { server, url: 'http://' + host + ':' + server.address().port };
 }
 
-const staging = resolve('dist/execution-preview');
+const editable = process.env.TRYPANE_EDITABLE_REHEARSAL === '1';
+const staging = resolve(editable ? 'dist/editable-rehearsal' : 'dist/execution-preview');
 const hostRoot = resolve(staging, 'host');
 const hostHtml = await readFile(resolve(hostRoot, 'index.html'), 'utf8');
 assert.ok(hostHtml.includes('__TRYPANE_RUNNER_FRAME_URL__'));
@@ -85,6 +86,67 @@ async function checkLinearMemory() {
   assert.fail('The runtime did not declare its linear memory');
 }
 
+async function checkEditable(browser, runnerUrl, workerPolicy) {
+  const workerPath = runtimePath + 'editable-worker.mjs';
+  const headers = await fetch(runnerUrl + workerPath, { method: 'HEAD' });
+  assert.equal(headers.status, 200);
+  assert.equal(headers.headers.get('content-security-policy'), workerPolicy);
+
+  const page = await browser.newPage();
+  try {
+    // A runner-origin document lets the harness exercise the worker directly.
+    // This build has no app-to-runner message route for editable source.
+    await page.goto(runnerUrl);
+    const run = (source, input = '') => page.evaluate(({ workerPath, source, input }) =>
+      new Promise(resolve => {
+        const worker = new Worker(workerPath, { type: 'module' });
+        let deadline = setTimeout(() => finish({ kind: 'startup-timeout' }), 45_000);
+
+        function finish(outcome) {
+          clearTimeout(deadline);
+          worker.terminate();
+          resolve(outcome);
+        }
+        worker.onerror = () => finish({ kind: 'worker-error' });
+        worker.onmessage = ({ data }) => {
+          if (data.kind === 'ready') {
+            worker.postMessage({ source, input });
+          } else if (data.kind === 'entered') {
+            clearTimeout(deadline);
+            deadline = setTimeout(() => finish({ kind: 'timeout' }), 2000);
+          } else {
+            finish(data);
+          }
+        };
+      }), { workerPath, source, input });
+
+    const first = await run('Console.WriteLine(Console.ReadLine()?.ToUpperInvariant()); return 12;', 'TryPane');
+    assert.equal(first.kind, 'result');
+    assert.equal(first.result.compilation.success, true);
+    assert.deepEqual(first.result.execution, { exitCode: 12, stdout: 'TRYPANE\n', stderr: '', truncated: false });
+
+    const invalid = await run('Console.WriteLine(unknown);');
+    assert.equal(invalid.kind, 'result');
+    assert.equal(invalid.result.compilation.success, false);
+    assert.equal(invalid.result.execution, null);
+    assert.ok(invalid.result.compilation.diagnostics.some(diagnostic => diagnostic.id === 'CS0103' && diagnostic.line === 1));
+    assert.equal((await run(' '.repeat(8193))).kind, 'error');
+    assert.equal((await run('Console.WriteLine(Console.ReadLine());', 'a'.repeat(4097))).kind, 'error');
+
+    const failure = await run('throw new InvalidOperationException("test");');
+    assert.equal(failure.kind, 'result');
+    assert.equal(failure.result.error, 'The snippet threw an exception.');
+    assert.equal((await run('while (true) { }')).kind, 'timeout');
+
+    const rerun = await run("Console.Write(new string('z', 5000));");
+    assert.equal(rerun.kind, 'result');
+    assert.deepEqual(rerun.result.execution, { exitCode: 0, stdout: 'z'.repeat(4096), stderr: '', truncated: true });
+    console.log('Editable C# rehearsal passed: source, preset input, diagnostics, limits, deadline and fresh rerun.');
+  } finally {
+    await page.close();
+  }
+}
+
 const container = 'trypane-runner-host-' + randomUUID();
 function docker(args) {
   return execFileSync('docker', args, { encoding: 'utf8', timeout: 20_000 }).trim();
@@ -119,8 +181,8 @@ try {
   const workerHeaders = await fetch(workerUrl, { method: 'HEAD' });
   assert.equal(workerHeaders.status, 200);
   assert.equal(workerHeaders.headers.get('content-type'), 'text/javascript');
-  assert.equal(workerHeaders.headers.get('content-security-policy'),
-    "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'none'");
+  const workerPolicy = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'none'";
+  assert.equal(workerHeaders.headers.get('content-security-policy'), workerPolicy);
   assert.equal(workerHeaders.headers.get('x-content-type-options'), 'nosniff');
   const wasmHeaders = await fetch(runnerUrl + runtimePath + '_framework/' + wasm, { method: 'HEAD' });
   assert.equal(wasmHeaders.status, 200);
@@ -190,6 +252,11 @@ try {
   assert.equal(await result.locator('[data-stream="stderr"]').textContent(), 'y'.repeat(4096));
   assert.equal(await runnerFrame.count(), 0);
   assert.equal(appRequests, 0, 'The runner worker must not reach the app origin');
+  if (editable) {
+    await checkEditable(browser, runnerUrl, workerPolicy);
+  } else {
+    assert.equal((await fetch(runnerUrl + runtimePath + 'editable-worker.mjs')).status, 404);
+  }
   console.log('Browser execution probe passed: origin separation, request blocking, stdout/stderr caps, timeout, cancellation, memory cap and rerun.');
 } finally {
   await browser?.close();

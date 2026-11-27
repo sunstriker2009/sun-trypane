@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis.CSharp;
 public static partial class SnippetCompiler
 {
     private const int DiagnosticLimit = 50;
+    private const int SourceLimit = 8192;
 
     private static readonly MetadataReference[] References =
     [
@@ -45,11 +46,15 @@ public static partial class SnippetCompiler
     [JSExport]
     public static string Check(string source)
     {
-        if (source.Length > 8192)
+        if (source.Length > SourceLimit)
             throw new ArgumentException("Use at most 8,192 characters.");
 
         using var output = new MemoryStream();
-        var emitted = CreateCompilation(source).Emit(output);
+        return JsonSerializer.Serialize(DescribeCompilation(CreateCompilation(source).Emit(output)), CheckJson.Default.CheckResult);
+    }
+
+    private static CheckResult DescribeCompilation(Microsoft.CodeAnalysis.Emit.EmitResult emitted)
+    {
         var diagnostics = new List<CompilerDiagnostic>();
         var truncated = false;
         foreach (var diagnostic in emitted.Diagnostics)
@@ -71,8 +76,7 @@ public static partial class SnippetCompiler
                 span.IsValid ? span.StartLinePosition.Character + 1 : null));
         }
 
-        return JsonSerializer.Serialize(
-            new CheckResult(emitted.Success, diagnostics, truncated), CheckJson.Default.CheckResult);
+        return new CheckResult(emitted.Success, diagnostics, truncated);
     }
 }
 

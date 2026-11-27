@@ -5,6 +5,7 @@ host_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(cd -- "$host_dir/../../.." && pwd)
 output=${1:?Pass a fresh output directory}
 source_commit=${2:?Pass the source commit SHA}
+runtime_dir=${3:-"$repo_root/dist/compiler"}
 [[ "$source_commit" =~ ^[0-9a-f]{40}$ ]]
 
 mkdir -- "$output"
@@ -14,7 +15,7 @@ cp -- "$repo_root/demo/demo.css" "$output/host/"
 cp -- "$repo_root/dist/demo/execution-probe.js" "$output/host/dist/demo/"
 cp -- "$repo_root/dist/src/"{pane.js,runner.js} "$output/host/dist/src/"
 cp -- "$host_dir/"{Dockerfile,frame.html.template,frame.mjs,runner.conf.template} "$output/runner/"
-cp -R -- "$repo_root/dist/compiler/wwwroot" "$output/runner/runtime"
+cp -R -- "$runtime_dir/wwwroot" "$output/runner/runtime"
 test -s "$output/runner/runtime/probe-worker.mjs"
 test -s "$output/runner/runtime/_framework/dotnet.js"
 cp -- "$host_dir/README.md" "$output/README.md"

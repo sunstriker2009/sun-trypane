@@ -15,8 +15,6 @@ public static partial class SnippetCompiler
 
     // This file is excluded from the public compiler build.
     [JSExport]
-    [UnconditionalSuppressMessage("Trimming", "IL2026",
-        Justification = "The fixed probe uses only Console and LINQ, which this build roots.")]
     public static string RunFixedProbe(string scenario)
     {
         var source = scenario switch
@@ -54,22 +52,29 @@ public static partial class SnippetCompiler
         if (!result.Success)
             throw new InvalidOperationException(string.Join(Environment.NewLine, result.Diagnostics));
 
+        return JsonSerializer.Serialize(
+            Invoke(image, "Ada"), ExecutionProbeJson.Default.ExecutionProbeResult);
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026",
+        Justification = "The rehearsal invokes only examples against the references rooted by the browser build.")]
+    private static ExecutionProbeResult Invoke(MemoryStream image, string input)
+    {
         var entryPoint = Assembly.Load(image.ToArray()).EntryPoint
             ?? throw new InvalidOperationException("The probe has no entry point.");
         // Browser WASM does not provide a default stdin. This one-shot worker
         // installs all three streams and is discarded after reporting the result.
-        using var stdin = new StringReader("Ada");
+        using var stdin = new StringReader(input);
         using var stdout = new CappedWriter(4096);
         using var stderr = new CappedWriter(4096);
         Console.SetIn(stdin);
         Console.SetOut(stdout);
         Console.SetError(stderr);
         Entered();
-        var value = entryPoint.Invoke(null, [Array.Empty<string>()]);
+        var arguments = entryPoint.GetParameters().Length == 0 ? null : new object[] { Array.Empty<string>() };
+        var value = entryPoint.Invoke(null, arguments);
         var exitCode = value is int code ? code : 0;
-        return JsonSerializer.Serialize(
-            new ExecutionProbeResult(exitCode, stdout.Text, stderr.Text, stdout.Truncated || stderr.Truncated),
-            ExecutionProbeJson.Default.ExecutionProbeResult);
+        return new ExecutionProbeResult(exitCode, stdout.Text, stderr.Text, stdout.Truncated || stderr.Truncated);
     }
 }
 
