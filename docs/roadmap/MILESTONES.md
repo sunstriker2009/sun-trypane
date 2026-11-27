@@ -8,6 +8,8 @@ Build the TryPane component and runner adapter in this repository, using [CodeFo
 
 ## Delivery sequence
 
+Use the [runner playbook](../operations/RUNNER-PLAYBOOK.md) to plan and verify support for a new language or runtime.
+
 | Milestone | Deliverable | Exit criteria | State |
 | --- | --- | --- | --- |
 | M0 · Component foundation | Set up a minimal TypeScript browser component, a small host harness, and a fake adapter. Define the host and adapter contracts for run identity, status, cancellation, and structured results. Keep input host-owned and the pane independent of a particular editor. | The host passes its current input when the user selects Run. A fixture demonstrates loading, running, success, failure, and cancellation. Cancel preserves input, stale results cannot replace a newer run, and the core tests run in CI. | Implemented |
