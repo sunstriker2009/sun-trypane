@@ -27,7 +27,7 @@ If frequent asset changes justify automated checks, add a separate PR with a pat
 
 ## Disposable end-to-end validation
 
-The separate [asset adoption end-to-end workflow](../.github/workflows/asset-e2e-validation.yml) tests STRATA's documented FOUNDRY adoption flow inside a temporary GitHub Actions workspace. It downloads scripts and dependencies from a **pinned FOUNDRY commit**, creates synthetic (not product-approved) PNG masters, initializes configuration, verifies override preservation, tests non-overwrite behavior and tamper rejection, then uploads generated assets for inspection. The fixture is discarded with the runner.
+Shared asset-adoption integration coverage is maintained in [Foundry asset validation](https://github.com/sunstriker2009/sun-foundry/blob/main/.github/workflows/asset-validation.yml). It tests the current shared scripts with synthetic masters, configuration initialization, override preservation, overwrite rejection, source integrity and tamper detection. Product builds and artwork review remain local to this repository.
 
 This tests generator integration and artifact upload, **not** GitHub repository creation or the manual-only production workflow dispatch. A real disposable GitHub repository and its manual dispatch would be required to validate those remaining platform-level steps. The E2E workflow is path-filtered and is not a required check for ordinary application changes.
 
