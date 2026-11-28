@@ -51,3 +51,8 @@ For a local editor, reuse the [loopback server](../../prototype/local-editor-ser
 - [ ] Host integration verified through its normal entry point. Shared regression tests passed.
 - [ ] Applicable package and deployment checks passed. Live and CI results recorded separately.
 - [ ] Demo, README, and milestone links updated. Deferred work recorded.
+
+
+## Local runner CI
+
+The [shared local-runner workflow](../../.github/workflows/local-runners.yml) checks C# and Go with one editor build and browser setup when shared inputs change. Language-only edits stay scoped to that runner. Dispatch it with `language: all`, `csharp` or `go` for manual validation. The two former standalone prototype workflow filenames are retired. See [CI coverage](../CI.md) for the distinct browser/compiler paths retained by this change.
