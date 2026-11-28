@@ -25,7 +25,7 @@ This repository was generated from **STRATA by Sun**, the SUN product repository
 ## 3. Expected checks
 
 - `repository-validation` on pushes to main and PRs.
-- `conventional-title` on PRs only.
+- Conventional Commit PR titles are guidance; no dedicated title check is required.
 - Product-specific CI checks must be added and protected separately.
 
 ## 4. Bootstrap tool
