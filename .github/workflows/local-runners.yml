@@ -1,0 +1,79 @@
+name: Local container runners
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/local-runners.yml'
+      - '.github/scripts/local-runner-scope.mjs'
+      - 'tests/local-runner-scope.test.mjs'
+      - 'prototype/csharp/**'
+      - 'prototype/go/**'
+      - 'prototype/container-runner.mjs'
+      - 'prototype/snippet-limits.mjs'
+      - 'prototype/local-editor*'
+      - 'src/**'
+      - 'tsconfig.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'demo/demo.css'
+  workflow_dispatch:
+    inputs:
+      language:
+        description: Local Docker runner to validate
+        type: choice
+        default: all
+        options: [all, csharp, go]
+permissions:
+  contents: read
+jobs:
+  local-runners:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Test runner selection
+        run: node --test tests/local-runner-scope.test.mjs
+      - name: Select affected local runners
+        id: scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RUNNER_LANGUAGE: ${{ inputs.language }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: node .github/scripts/local-runner-scope.mjs
+      - name: Build C# prototype image
+        if: steps.scope.outputs.csharp != 'false'
+        run: docker build -t trypane-csharp-prototype:local-v2 prototype/csharp
+      - name: Check C# compilation, diagnostics, cancellation and output limits
+        if: steps.scope.outputs.csharp != 'false'
+        run: node --test prototype/csharp/smoke.mjs
+      - name: Build Go runner image
+        if: steps.scope.outputs.go != 'false'
+        run: docker build -t trypane-go-prototype:local-v1 prototype/go
+      - name: Check the Go runner
+        if: steps.scope.outputs.go != 'false'
+        run: node --test prototype/go/smoke.mjs
+      - name: Build the shared browser editor once
+        run: |
+          npm ci
+          npm run build
+      - name: Install Chromium test dependencies once
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock playwright@1.56.1
+          if command -v google-chrome >/dev/null; then
+            echo "TRYPANE_CHROME_PATH=$(command -v google-chrome)" >> "$GITHUB_ENV"
+          else
+            npx playwright install chromium --with-deps
+          fi
+      - name: Check the C# browser editor in Chromium
+        if: steps.scope.outputs.csharp != 'false'
+        run: node prototype/csharp/browser-smoke.mjs
+      - name: Check the Go browser editor in Chromium
+        if: steps.scope.outputs.go != 'false'
+        run: node prototype/go/browser-smoke.mjs
